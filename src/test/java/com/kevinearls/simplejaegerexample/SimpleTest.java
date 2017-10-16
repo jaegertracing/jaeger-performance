@@ -21,6 +21,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
@@ -35,8 +39,10 @@ public class SimpleTest {
     private static final Integer JAEGER_MAX_QUEUE_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_QUEUE_SIZE", "50"));
     private static final Double JAEGER_SAMPLING_RATE = new Double(envs.getOrDefault("JAEGER_SAMPLING_RATE", "1.0"));
     private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "5775"));
-    private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "AGENT");
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
+    private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "10"));
+    private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "AGENT");
+
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleTest.class.getName());
     private static Tracer tracer;
@@ -50,16 +56,6 @@ public class SimpleTest {
     public  void tearDown() {
         com.uber.jaeger.Tracer jaegerTracer = (com.uber.jaeger.Tracer) tracer;
         jaegerTracer.close();
-    }
-
-
-    @Test
-    public void writeSomeTraces() throws Exception {
-        for (int i = 0; i < ITERATIONS; i++) {
-            ActiveSpan span = tracer.buildSpan("blah").startActive();
-            Thread.sleep(DELAY);
-            span.close();
-        }
     }
 
     public static Tracer jaegerTracer() {
@@ -91,4 +87,45 @@ public class SimpleTest {
 
         return tracer;
     }
+
+
+    @Test
+    public void writeSomeTraces() throws Exception {
+        AtomicInteger threadId = new AtomicInteger(0);
+        ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        for (int i = 0; i < THREAD_COUNT; i++) {
+            Runnable worker = new WriteSomeTraces(tracer, ITERATIONS, threadId.incrementAndGet());
+            executor.execute(worker);
+        }
+        executor.shutdown();
+        executor.awaitTermination(30, TimeUnit.MINUTES);
+        System.out.println("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " threads");
+    }
+
+    class WriteSomeTraces implements Runnable {
+        Tracer tracer;
+        int iterations;
+        int id;
+
+        public WriteSomeTraces(Tracer tracer, int iterations, int id) {
+            this.tracer = tracer;
+            this.iterations = iterations;
+            this.id = id;
+        }
+
+        @Override
+        public void run() {
+            String s = "Thread " + id;
+            logger.info("Starting " + s);
+            for (int i = 0; i < iterations; i++) {
+                ActiveSpan span = tracer.buildSpan(s).startActive();
+                try {
+                    Thread.sleep(DELAY);
+                } catch (InterruptedException e) {
+                }
+                span.close();
+            }
+        }
+    }
+
 }
