@@ -25,6 +25,7 @@ import java.util.Map;
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
 
+    private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "100"));
     private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "1000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
@@ -54,11 +55,10 @@ public class SimpleTest {
 
     @Test
     public void writeSomeTraces() throws Exception {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < ITERATIONS; i++) {
             ActiveSpan span = tracer.buildSpan("blah").startActive();
-            Thread.sleep(100);
+            Thread.sleep(DELAY);
             span.close();
-
         }
     }
 
