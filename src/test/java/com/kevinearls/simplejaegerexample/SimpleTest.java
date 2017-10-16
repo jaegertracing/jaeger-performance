@@ -7,6 +7,7 @@ import com.uber.jaeger.reporters.CompositeReporter;
 import com.uber.jaeger.reporters.LoggingReporter;
 import com.uber.jaeger.reporters.RemoteReporter;
 import com.uber.jaeger.reporters.Reporter;
+import com.uber.jaeger.samplers.ConstSampler;
 import com.uber.jaeger.samplers.ProbabilisticSampler;
 import com.uber.jaeger.samplers.Sampler;
 import com.uber.jaeger.senders.HttpSender;
@@ -43,7 +44,6 @@ public class SimpleTest {
     private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "10"));
     private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "AGENT");
 
-
     private static final Logger logger = LoggerFactory.getLogger(SimpleTest.class.getName());
     private static Tracer tracer;
 
@@ -53,7 +53,8 @@ public class SimpleTest {
     }
 
     @After
-    public  void tearDown() {
+    public void tearDown() throws Exception {
+        Thread.sleep(JAEGER_FLUSH_INTERVAL);
         com.uber.jaeger.Tracer jaegerTracer = (com.uber.jaeger.Tracer) tracer;
         jaegerTracer.close();
     }
@@ -84,7 +85,6 @@ public class SimpleTest {
         tracer = new com.uber.jaeger.Tracer.Builder(TEST_SERVICE_NAME, compositeReporter, sampler)
                 .build();
 
-
         return tracer;
     }
 
@@ -99,7 +99,7 @@ public class SimpleTest {
         }
         executor.shutdown();
         executor.awaitTermination(30, TimeUnit.MINUTES);
-        System.out.println("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " threads");
+        System.out.println("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans");
     }
 
     class WriteSomeTraces implements Runnable {
