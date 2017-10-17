@@ -20,6 +20,7 @@ import io.opentracing.ActiveSpan;
 import io.opentracing.Tracer;
 import org.junit.After;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -104,9 +105,15 @@ public class SimpleTest {
         return tracer;
     }
 
+    @Test
+    public void countTraces() throws Exception {
+        Session cassandraSession = getCassandraSession();
+        int traceCount = countTracesInCassandra(cassandraSession);
+        logger.info("Traces contains " + traceCount + " entries");
+    }
 
     @Test
-    public void writeSomeTraces() throws Exception {
+    public void createTracesTest() throws Exception {
         logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
         AtomicInteger threadId = new AtomicInteger(0);
         long startTime = System.currentTimeMillis();
