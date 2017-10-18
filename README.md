@@ -16,18 +16,19 @@
 #Checkout and run the tests
 Clone this repo and cd into it `git@github.com:Hawkular-QE/SimpleJaegerExample.git`
 
-###I configured this to create 300 000 spans in 30 seconds, 
+### Run the test
+
+#### I configured this to create 300 000 spans in 30 seconds, 
 + export THREAD_COUNT=100
 + export ITERATIONS=3000
 + export DELAY=10
 + export USE_AGENT_OR_COLLECTOR=collector /// if you want,defaults to agent
 + export JAEGER_MAX_QUEUE_SIZE=100000  // This is the default
 
-### Run the test
 Optional for the test: CASSANDRA_CLUSTER_IP defaults to localhost CASSANDRA_KEYSPACE_NAME defaults to jaeger_v1_test
 `mvn clean -Dtest=SimpleTest#createTracesTest test`
 
-###Between test runs do this to clear out the traces table
+### Between test runs do this to clear out the traces table
 `cqlsh --keyspace=jaeger_v1_test --execute="truncate traces;"
 `
 ### Just get a count of traces in Cassandra
