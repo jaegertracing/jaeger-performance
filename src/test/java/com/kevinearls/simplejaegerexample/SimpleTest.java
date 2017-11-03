@@ -4,6 +4,8 @@ import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
 import com.datastax.driver.core.Session;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.uber.jaeger.metrics.Metrics;
 import com.uber.jaeger.metrics.NullStatsReporter;
 import com.uber.jaeger.metrics.StatsFactoryImpl;
@@ -20,11 +22,17 @@ import io.opentracing.ActiveSpan;
 import io.opentracing.Tracer;
 import org.junit.After;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.MediaType;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -32,7 +40,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
@@ -41,6 +49,10 @@ public class SimpleTest {
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
 
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "100"));
+
+    private static final String ES_HOST = envs.getOrDefault("ES_HOST", "localhost");
+    private static final String ES_PORT = envs.getOrDefault("ES_PORT", "9200");
+
     private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "1000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
@@ -49,6 +61,7 @@ public class SimpleTest {
     private static final Integer JAEGER_MAX_PACKET_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_PACKET_SIZE", "0"));
     private static final Integer JAEGER_MAX_QUEUE_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_QUEUE_SIZE", "100000"));
     private static final Double JAEGER_SAMPLING_RATE = new Double(envs.getOrDefault("JAEGER_SAMPLING_RATE", "1.0"));
+    private static final String JAEGER_STORAGE = envs.getOrDefault("JAEGER_STORAGE", "cassandra");
     private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "5775"));
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
     private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "10"));
@@ -112,6 +125,12 @@ public class SimpleTest {
         logger.info("Traces contains " + traceCount + " entries");
     }
 
+    /**
+     * This is the primary test.  Create the specified number of traces, and then verify that they exist in
+     * whichever storage back end we have selected.
+     *
+     * @throws Exception
+     */
     @Test
     public void createTracesTest() throws Exception {
         logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
@@ -129,8 +148,90 @@ public class SimpleTest {
         logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration/1000 + " seconds") ;
 
         // Validate trace count here
-        Session cassandraSession = getCassandraSession();
         int expectedTraceCount = THREAD_COUNT * ITERATIONS;
+        int actualTraceCount;
+
+        if (JAEGER_STORAGE.equalsIgnoreCase("cassandra")) {
+            logger.info("Validating Cassandra Traces");
+            actualTraceCount = validateCassandraTraces(expectedTraceCount);
+        } else {
+            logger.info("Validating ES Traces");
+            actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
+        }
+
+        assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
+    }
+
+
+    /**
+     * It can take a while for traces to actually get written to storage, so both this and the Cassandra validation
+     * method loop until they either find the expected number of traces, or the count returned ceases to increase
+     *
+     * @param expectedTraceCount
+     * @return
+     * @throws Exception
+     */
+    private int validateElasticSearchTraces(int expectedTraceCount) throws Exception {
+        // curl command needs to look like http://localhost:9200/jaeger-span-2017-11-02/_count
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        String formattedDate = now.format(formatter);
+        String targetUrlString = "http://" + ES_HOST + ":" + ES_PORT + "/jaeger-span-" + formattedDate + "/_count";
+        logger.info("Using ElasticSearch URL : [" + targetUrlString + "]" );
+
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target(targetUrlString);
+        Invocation.Builder builder = target.request();
+        builder.accept(MediaType.APPLICATION_JSON);
+
+        int previousTraceCount = -1;
+        int actualTraceCount = getElasticSearchTraceCount(builder);
+        int startTraceCount = actualTraceCount;
+        int iterations = 0;
+        logger.info("Actual Trace count " + actualTraceCount);
+
+        while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
+            logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
+            Thread.sleep(5000);
+            previousTraceCount = actualTraceCount;
+            actualTraceCount = getElasticSearchTraceCount(builder);
+            iterations++;
+        }
+
+        logger.info("It took " + iterations  + " iterations to go from " + startTraceCount + " to " + actualTraceCount + " traces");
+        logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
+        return actualTraceCount;
+    }
+
+
+    /**
+     * Perform a GET on the ES server (something like http://localhost:9200/jaeger-span-2017-11-02/_count) and
+     * extract the count from the response
+     * @param builder
+     * @return
+     * @throws Exception
+     */
+    private int getElasticSearchTraceCount(Invocation.Builder builder) throws Exception {
+        String result = builder.get(String.class);
+        ObjectMapper jsonObjectMapper = new ObjectMapper();
+        JsonNode jsonPayload = jsonObjectMapper.readTree(result);
+        JsonNode data = jsonPayload.get("count");
+        int traceCount = data.asInt();
+
+        return traceCount;
+    }
+
+
+    /**
+     * It can take a while for traces to actually get written to storage, so both this and the ElasticSearch validation
+     * method loop until they either find the expected number of traces, or the count returned ceases to increase
+     *
+     * @param expectedTraceCount
+     * @return
+     * @throws InterruptedException
+     */
+    private int validateCassandraTraces(int expectedTraceCount) throws InterruptedException {
+        Session cassandraSession = getCassandraSession();
         int previousTraceCount = -1;
         int actualTraceCount = countTracesInCassandra(cassandraSession);
         int startTraceCount = actualTraceCount;
@@ -145,7 +246,7 @@ public class SimpleTest {
 
         logger.info("It took " + iterations  + " iterations to go from " + startTraceCount + " to " + actualTraceCount + " traces");
         logger.info("FOUND " + actualTraceCount + " traces in Cassandra");
-        assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
+        return actualTraceCount;
     }
 
     private Session getCassandraSession() {
@@ -157,6 +258,12 @@ public class SimpleTest {
         return session;
     }
 
+    /**
+     * For performance reasons Cassandra won't let us do a "select count(*) from traces" so instead we just have to do
+     * "select * from traces" and count the number of rows it returns.
+     * @param session
+     * @return
+     */
     private int countTracesInCassandra(Session session) {
         ResultSet result = session.execute("select * from traces");
         RowCountingConsumer consumer = new RowCountingConsumer();
