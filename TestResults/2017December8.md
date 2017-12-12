@@ -1,14 +1,16 @@
 # December 8 2017 Test Results
 
-**Host** 
+## Environment
+### Host
 + `Lenovo T540`
 + `Memory 16G`
 + `Intel Core i7-4900MQ CPU @ 2.80Ghz x 8`
 + `Disk 250gb SSD`
 + `Ubuntu 17.10`
 
-+** Cassandra Version `Standalone 3.11.1`
-+** Jaeger Version `1.0?`
+### Software Versions
++ Cassandra Version `Standalone 3.11.1`
++ Jaeger Version `1.0`
 
 ## Test Summary
 This is a standalone Java junit test which models our Jaeger Instrumentation Performance 
@@ -21,7 +23,7 @@ Tests were run with the following values
 + ITERATIONS=30000
 + DELAY=1
 + JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))  
-+ export COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
++ COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
 + CASSANDRA_KEYSPACE_NAME=jaeger_v1_test
  
 ### Reading test results
@@ -29,6 +31,7 @@ Tests were run with the following values
 + `Read Time` is the amount of additional time in seconds it takes before all of the traces appear in storage
  
 ## Results with Standalone Cassandra, Jaeger Collector run from source
+Standalone means a Cassandra distribution downloaded from http://cassandra.apache.org/download/
 |Run Number | Write Time | Read Time | Traces Found |
 | ------------- | -----:|-----:|-----:|
 | 1 | 33.854 | 690.953 | **2540275** | 
@@ -45,6 +48,7 @@ Run on 11 December 2017
 | 3 | 34.636 | 784.96 | **2942341** | 
 
 ## Results with CCM single node Cassandra Cluster, Jaeger Collector run from source
+CCM is Cassandra Cluster Manager from `https://github.com/pcmanus/ccm`
 Run on 12 December 2017
 
 |Run Number | Write Time | Read Time | Traces Found |
@@ -61,7 +65,6 @@ Run on 12 December 2017
 | 1 | 35.685 | 1,081.882 | 2910235 | 
 | 2 | 35.310 | 1,123.587 | 2968483 | 
 | 3 | 35.888 | 1,118.428 | 2927866 | 
-
 
 ## Results with 3 node Cassandra Cluster, Jaeger Collector run from Source
 Using `ccm create test --version=3.11.1 --nodes=3 --start`
