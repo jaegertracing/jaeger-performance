@@ -9,7 +9,7 @@
 + `Ubuntu 17.10`
 
 ### Software Versions
-+ Cassandra Version `Standalone 3.11.1`
++ Cassandra Version `3.11.1`
 + Jaeger Version `1.0`
 
 ## Test Summary
@@ -31,7 +31,8 @@ Tests were run with the following values
 + `Read Time` is the amount of additional time in seconds it takes before all of the traces appear in storage
  
 ## Results with Standalone Cassandra, Jaeger Collector run from source
-Standalone means a Cassandra distribution downloaded from http://cassandra.apache.org/download/
+Standalone means a Cassandra distribution downloaded from http://cassandra.apache.org/download
+
 |Run Number | Write Time | Read Time | Traces Found |
 | ------------- | -----:|-----:|-----:|
 | 1 | 33.854 | 690.953 | **2540275** | 
@@ -49,6 +50,7 @@ Run on 11 December 2017
 
 ## Results with CCM single node Cassandra Cluster, Jaeger Collector run from source
 CCM is Cassandra Cluster Manager from `https://github.com/pcmanus/ccm`
+
 Run on 12 December 2017
 
 |Run Number | Write Time | Read Time | Traces Found |
