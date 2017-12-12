@@ -48,12 +48,12 @@ public class SimpleTest {
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "localhost");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
 
-    private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "100"));
+    private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
 
     private static final String ES_HOST = envs.getOrDefault("ES_HOST", "localhost");
     private static final String ES_PORT = envs.getOrDefault("ES_PORT", "9200");
 
-    private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "1000"));
+    private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "3000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_PORT = envs.getOrDefault("MY_JAEGER_COLLECTOR_PORT", "14268");
@@ -64,8 +64,8 @@ public class SimpleTest {
     private static final String JAEGER_STORAGE = envs.getOrDefault("JAEGER_STORAGE", "cassandra");
     private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "5775"));
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
-    private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "10"));
-    private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "AGENT");
+    private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
+    private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "COLLECTOR");
     private static final String USE_LOGGING_REPORTER = envs.getOrDefault("USE_LOGGING_REPORTER", "false");
 
     private static final Logger logger = LoggerFactory.getLogger(SimpleTest.class.getName());
@@ -135,7 +135,7 @@ public class SimpleTest {
     public void createTracesTest() throws Exception {
         logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
         AtomicInteger threadId = new AtomicInteger(0);
-        long startTime = System.currentTimeMillis();
+        long createStartTime = System.currentTimeMillis();
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         for (int i = 0; i < THREAD_COUNT; i++) {
             Runnable worker = new WriteSomeTraces(tracer, ITERATIONS, threadId.incrementAndGet());
@@ -143,9 +143,9 @@ public class SimpleTest {
         }
         executor.shutdown();
         executor.awaitTermination(30, TimeUnit.MINUTES);
-        long endTime = System.currentTimeMillis();
-        long duration = endTime - startTime;
-        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration/1000 + " seconds") ;
+        long createEndTime = System.currentTimeMillis();
+        long duration = createEndTime - createStartTime;
+        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds") ;
 
         // Validate trace count here
         int expectedTraceCount = THREAD_COUNT * ITERATIONS;
@@ -159,6 +159,9 @@ public class SimpleTest {
             actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
         }
 
+        long countEndTime = System.currentTimeMillis();
+        long countDuration = countEndTime - createEndTime;
+        logger.info("Counting " + actualTraceCount + " traces took " + countDuration/1000 + "." + countDuration % 1000 +" seconds.");
         assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
     }
 
@@ -179,13 +182,14 @@ public class SimpleTest {
         String targetUrlString = "http://" + ES_HOST + ":" + ES_PORT + "/jaeger-span-" + formattedDate + "/_count";
         logger.info("Using ElasticSearch URL : [" + targetUrlString + "]" );
 
-        Client client = ClientBuilder.newClient();
+        /*Client client = ClientBuilder.newClient();
         WebTarget target = client.target(targetUrlString);
         Invocation.Builder builder = target.request();
         builder.accept(MediaType.APPLICATION_JSON);
+        */
 
         int previousTraceCount = -1;
-        int actualTraceCount = getElasticSearchTraceCount(builder);
+        int actualTraceCount = getElasticSearchTraceCount(targetUrlString);
         int startTraceCount = actualTraceCount;
         int iterations = 0;
         logger.info("Actual Trace count " + actualTraceCount);
@@ -194,7 +198,7 @@ public class SimpleTest {
             logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
             Thread.sleep(5000);
             previousTraceCount = actualTraceCount;
-            actualTraceCount = getElasticSearchTraceCount(builder);
+            actualTraceCount = getElasticSearchTraceCount(targetUrlString);
             iterations++;
         }
 
@@ -207,16 +211,24 @@ public class SimpleTest {
     /**
      * Perform a GET on the ES server (something like http://localhost:9200/jaeger-span-2017-11-02/_count) and
      * extract the count from the response
-     * @param builder
+     * @param targetUrlString
      * @return
      * @throws Exception
      */
-    private int getElasticSearchTraceCount(Invocation.Builder builder) throws Exception {
+    private int getElasticSearchTraceCount(String targetUrlString) throws Exception {
+        int retry = 0;
+        Client client = ClientBuilder.newClient();
+        WebTarget target = client.target(targetUrlString);
+        Invocation.Builder builder = target.request();
+        builder.accept(MediaType.APPLICATION_JSON);
+
         String result = builder.get(String.class);
         ObjectMapper jsonObjectMapper = new ObjectMapper();
         JsonNode jsonPayload = jsonObjectMapper.readTree(result);
         JsonNode data = jsonPayload.get("count");
         int traceCount = data.asInt();
+
+        client.close();
 
         return traceCount;
     }
