@@ -20,17 +20,16 @@ import com.uber.jaeger.senders.Sender;
 import com.uber.jaeger.senders.UdpSender;
 import io.opentracing.ActiveSpan;
 import io.opentracing.Tracer;
+import org.apache.http.HttpHost;
+import org.apache.http.util.EntityUtils;
+import org.elasticsearch.client.Response;
+import org.elasticsearch.client.RestClient;
 import org.junit.After;
 import org.junit.BeforeClass;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.ws.rs.client.Client;
-import javax.ws.rs.client.ClientBuilder;
-import javax.ws.rs.client.Invocation;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.MediaType;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -47,12 +46,9 @@ public class SimpleTest {
 
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "localhost");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
-
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
-
     private static final String ES_HOST = envs.getOrDefault("ES_HOST", "localhost");
-    private static final String ES_PORT = envs.getOrDefault("ES_PORT", "9200");
-
+    private static final Integer ES_PORT = new Integer(envs.getOrDefault("ES_PORT", "9200"));
     private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "3000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
@@ -83,7 +79,7 @@ public class SimpleTest {
         jaegerTracer.close();
     }
 
-    public static Tracer jaegerTracer() {
+    private static Tracer jaegerTracer() {
         Tracer tracer;
         Sender sender;
         CompositeReporter compositeReporter;
@@ -120,8 +116,19 @@ public class SimpleTest {
 
     @Test
     public void countTraces() throws Exception {
-        Session cassandraSession = getCassandraSession();
-        int traceCount = countTracesInCassandra(cassandraSession);
+        int traceCount = 0;
+
+        if (JAEGER_STORAGE.equalsIgnoreCase("cassandra")) {
+            Session cassandraSession = getCassandraSession();
+            traceCount = countTracesInCassandra(cassandraSession);
+        } else {
+            RestClient restClient = getESRestClient();
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            String formattedDate = now.format(formatter);
+            String targetUrlString = "/jaeger-span-" + formattedDate + "/_count";
+            traceCount = getElasticSearchTraceCount(restClient, targetUrlString);
+        }
         logger.info("Traces contains " + traceCount + " entries");
     }
 
@@ -129,7 +136,7 @@ public class SimpleTest {
      * This is the primary test.  Create the specified number of traces, and then verify that they exist in
      * whichever storage back end we have selected.
      *
-     * @throws Exception
+     * @throws Exception of some sort
      */
     @Test
     public void createTracesTest() throws Exception {
@@ -165,7 +172,6 @@ public class SimpleTest {
         assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
     }
 
-
     /**
      * It can take a while for traces to actually get written to storage, so both this and the Cassandra validation
      * method loop until they either find the expected number of traces, or the count returned ceases to increase
@@ -175,30 +181,26 @@ public class SimpleTest {
      * @throws Exception
      */
     private int validateElasticSearchTraces(int expectedTraceCount) throws Exception {
-        // curl command needs to look like http://localhost:9200/jaeger-span-2017-11-02/_count
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String formattedDate = now.format(formatter);
-        String targetUrlString = "http://" + ES_HOST + ":" + ES_PORT + "/jaeger-span-" + formattedDate + "/_count";
+        String targetUrlString = "/jaeger-span-" + formattedDate + "/_count";
         logger.info("Using ElasticSearch URL : [" + targetUrlString + "]" );
 
-        /*Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(targetUrlString);
-        Invocation.Builder builder = target.request();
-        builder.accept(MediaType.APPLICATION_JSON);
-        */
+        RestClient restClient = getESRestClient();
 
         int previousTraceCount = -1;
-        int actualTraceCount = getElasticSearchTraceCount(targetUrlString);
+        int actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
         int startTraceCount = actualTraceCount;
         int iterations = 0;
+        long sleepDelay = Math.max(5, expectedTraceCount / 100000);   // delay 1 second for every 100,000 traces
+        logger.info("Setting SLEEP DELAY " + sleepDelay + " seconds");
         logger.info("Actual Trace count " + actualTraceCount);
-
         while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
             logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
-            Thread.sleep(5000);
+            TimeUnit.SECONDS.sleep(sleepDelay);
             previousTraceCount = actualTraceCount;
-            actualTraceCount = getElasticSearchTraceCount(targetUrlString);
+            actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
             iterations++;
         }
 
@@ -207,32 +209,23 @@ public class SimpleTest {
         return actualTraceCount;
     }
 
+    private RestClient getESRestClient() {
+        return RestClient.builder(
+                    new HttpHost(ES_HOST, ES_PORT, "http"),
+                    new HttpHost(ES_HOST, ES_PORT +1, "http"))
+                    .build();
+    }
 
-    /**
-     * Perform a GET on the ES server (something like http://localhost:9200/jaeger-span-2017-11-02/_count) and
-     * extract the count from the response
-     * @param targetUrlString
-     * @return
-     * @throws Exception
-     */
-    private int getElasticSearchTraceCount(String targetUrlString) throws Exception {
-        int retry = 0;
-        Client client = ClientBuilder.newClient();
-        WebTarget target = client.target(targetUrlString);
-        Invocation.Builder builder = target.request();
-        builder.accept(MediaType.APPLICATION_JSON);
-
-        String result = builder.get(String.class);
+    private int getElasticSearchTraceCount(RestClient restClient, String targetUrlString) throws Exception {
+        Response response = restClient.performRequest("GET", targetUrlString);
+        String responseBody = EntityUtils.toString(response.getEntity());
         ObjectMapper jsonObjectMapper = new ObjectMapper();
-        JsonNode jsonPayload = jsonObjectMapper.readTree(result);
-        JsonNode data = jsonPayload.get("count");
-        int traceCount = data.asInt();
-
-        client.close();
+        JsonNode jsonPayload = jsonObjectMapper.readTree(responseBody);
+        JsonNode count = jsonPayload.get("count");
+        int traceCount = count.asInt();
 
         return traceCount;
     }
-
 
     /**
      * It can take a while for traces to actually get written to storage, so both this and the ElasticSearch validation

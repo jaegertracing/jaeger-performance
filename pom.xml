@@ -10,6 +10,7 @@
 
     <properties>
         <cassandra.driver.core.version>3.3.0</cassandra.driver.core.version>
+        <elasticsearch.version>6.0.0-rc2</elasticsearch.version>  <!-- TODO update to 6.10.0 once it's in maven central -->
         <glassfish.jersey.client.version>2.23.2</glassfish.jersey.client.version>
         <jackson.version>2.9.2</jackson.version>
         <jaeger.version>0.21.0</jaeger.version>
@@ -52,6 +53,11 @@
             <version>1.2.17</version>
         </dependency>
 
+        <dependency>
+            <groupId>org.elasticsearch.client</groupId>
+            <artifactId>elasticsearch-rest-client</artifactId>
+            <version>${elasticsearch.version}</version>
+        </dependency>
         <!-- For JSON -->
         <!-- https://mvnrepository.com/artifact/javax.ws.rs/javax.ws.rs-api -->
         <dependency>
