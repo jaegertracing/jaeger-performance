@@ -9,16 +9,17 @@
     <version>1.0-SNAPSHOT</version>
 
     <properties>
-        <cassandra.driver.core.version>3.3.0</cassandra.driver.core.version>
-        <elasticsearch.version>6.0.0-rc2</elasticsearch.version>  <!-- TODO update to 6.10.0 once it's in maven central -->
-        <glassfish.jersey.client.version>2.23.2</glassfish.jersey.client.version>
-        <jackson.version>2.9.2</jackson.version>
-        <jaeger.version>0.21.0</jaeger.version>
-        <javax.ws.rs.version>2.0.1</javax.ws.rs.version>
+        <cassandra.driver.core.version>3.3.2</cassandra.driver.core.version>
+        <elasticsearch.version>6.1.1</elasticsearch.version>
+        <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
+        <jackson.version>2.9.3</jackson.version>
+        <jaeger.version>0.23.0</jaeger.version>
+        <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.versions.plugin.version>2.5</maven.versions.plugin.version>
     </properties>
 
     <dependencies>
@@ -95,6 +96,25 @@
             </plugins>
         </pluginManagement>
     </build>
+
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>versions-maven-plugin</artifactId>
+                <version>${maven.versions.plugin.version}</version>
+                <reportSets>
+                    <reportSet>
+                        <reports>
+                            <report>dependency-updates-report</report>
+                            <report>plugin-updates-report</report>
+                            <report>property-updates-report</report>
+                        </reports>
+                    </reportSet>
+                </reportSets>
+            </plugin>
+        </plugins>
+    </reporting>
 
 
 </project>

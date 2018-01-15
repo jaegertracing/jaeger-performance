@@ -18,7 +18,7 @@ import com.uber.jaeger.samplers.Sampler;
 import com.uber.jaeger.senders.HttpSender;
 import com.uber.jaeger.senders.Sender;
 import com.uber.jaeger.senders.UdpSender;
-import io.opentracing.ActiveSpan;
+import io.opentracing.Span;
 import io.opentracing.Tracer;
 import org.apache.http.HttpHost;
 import org.apache.http.util.EntityUtils;
@@ -295,12 +295,13 @@ public class SimpleTest {
             String s = "Thread " + id;
             logger.debug("Starting " + s);
             for (int i = 0; i < iterations; i++) {
-                ActiveSpan span = tracer.buildSpan(s).startActive();
+                Span span = tracer.buildSpan(s).start();
                 try {
+                    span.setTag("iteration", i);
                     Thread.sleep(DELAY);
                 } catch (InterruptedException e) {
                 }
-                span.close();
+                span.finish();
             }
         }
     }
