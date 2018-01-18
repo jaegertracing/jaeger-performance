@@ -1,5 +1,7 @@
 package com.kevinearls.simplejaegerexample;
 
+import static org.junit.Assert.assertEquals;
+
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
 import com.datastax.driver.core.Row;
@@ -18,8 +20,20 @@ import com.uber.jaeger.samplers.Sampler;
 import com.uber.jaeger.senders.HttpSender;
 import com.uber.jaeger.senders.Sender;
 import com.uber.jaeger.senders.UdpSender;
+
 import io.opentracing.Span;
 import io.opentracing.Tracer;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
+
 import org.apache.http.HttpHost;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
@@ -30,16 +44,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
-
-import static org.junit.Assert.assertEquals;
 
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
@@ -142,7 +146,7 @@ public class SimpleTest {
     public void createTracesTest() throws Exception {
         logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
         AtomicInteger threadId = new AtomicInteger(0);
-        long createStartTime = System.currentTimeMillis();
+        final long createStartTime = System.currentTimeMillis();
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         for (int i = 0; i < THREAD_COUNT; i++) {
             Runnable worker = new WriteSomeTraces(tracer, ITERATIONS, threadId.incrementAndGet());
@@ -152,7 +156,7 @@ public class SimpleTest {
         executor.awaitTermination(30, TimeUnit.MINUTES);
         long createEndTime = System.currentTimeMillis();
         long duration = createEndTime - createStartTime;
-        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds") ;
+        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds");
 
         // Validate trace count here
         int expectedTraceCount = THREAD_COUNT * ITERATIONS;
@@ -168,7 +172,7 @@ public class SimpleTest {
 
         long countEndTime = System.currentTimeMillis();
         long countDuration = countEndTime - createEndTime;
-        logger.info("Counting " + actualTraceCount + " traces took " + countDuration/1000 + "." + countDuration % 1000 +" seconds.");
+        logger.info("Counting " + actualTraceCount + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
         assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
     }
 
@@ -176,29 +180,32 @@ public class SimpleTest {
      * It can take a while for traces to actually get written to storage, so both this and the Cassandra validation
      * method loop until they either find the expected number of traces, or the count returned ceases to increase
      *
-     * @param expectedTraceCount
-     * @return
-     * @throws Exception
+     * @param expectedTraceCount number of traces we expect to find
+     * @return actual number of traces found in ElasticSearch
      */
-    private int validateElasticSearchTraces(int expectedTraceCount) throws Exception {
+    private int validateElasticSearchTraces(int expectedTraceCount) throws IOException {
         LocalDateTime now = LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
         String formattedDate = now.format(formatter);
         String targetUrlString = "/jaeger-span-" + formattedDate + "/_count";
-        logger.info("Using ElasticSearch URL : [" + targetUrlString + "]" );
+        logger.info("Using ElasticSearch URL : [" + targetUrlString + "]");
 
         RestClient restClient = getESRestClient();
 
         int previousTraceCount = -1;
         int actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
-        int startTraceCount = actualTraceCount;
+        final int startTraceCount = actualTraceCount;
         int iterations = 0;
         long sleepDelay = Math.max(5, expectedTraceCount / 100000);   // delay 1 second for every 100,000 traces
         logger.info("Setting SLEEP DELAY " + sleepDelay + " seconds");
         logger.info("Actual Trace count " + actualTraceCount);
         while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
             logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
-            TimeUnit.SECONDS.sleep(sleepDelay);
+            try {
+                TimeUnit.SECONDS.sleep(sleepDelay);
+            } catch (InterruptedException e) {
+                logger.warn("Got interrupted exception", e);
+            }
             previousTraceCount = actualTraceCount;
             actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
             iterations++;
@@ -212,11 +219,11 @@ public class SimpleTest {
     private RestClient getESRestClient() {
         return RestClient.builder(
                     new HttpHost(ES_HOST, ES_PORT, "http"),
-                    new HttpHost(ES_HOST, ES_PORT +1, "http"))
+                    new HttpHost(ES_HOST, ES_PORT + 1, "http"))
                     .build();
     }
 
-    private int getElasticSearchTraceCount(RestClient restClient, String targetUrlString) throws Exception {
+    private int getElasticSearchTraceCount(RestClient restClient, String targetUrlString) throws IOException {
         Response response = restClient.performRequest("GET", targetUrlString);
         String responseBody = EntityUtils.toString(response.getEntity());
         ObjectMapper jsonObjectMapper = new ObjectMapper();
@@ -231,11 +238,10 @@ public class SimpleTest {
      * It can take a while for traces to actually get written to storage, so both this and the ElasticSearch validation
      * method loop until they either find the expected number of traces, or the count returned ceases to increase
      *
-     * @param expectedTraceCount
-     * @return
-     * @throws InterruptedException
+     * @param expectedTraceCount number of traces we expect to find
+     * @return final trace count found in Cassandra
      */
-    private int validateCassandraTraces(int expectedTraceCount) throws InterruptedException {
+    private int validateCassandraTraces(int expectedTraceCount) {
         Session cassandraSession = getCassandraSession();
         int previousTraceCount = -1;
         int actualTraceCount = countTracesInCassandra(cassandraSession);
@@ -243,7 +249,11 @@ public class SimpleTest {
         int iterations = 0;
         while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
             logger.info("FOUND " + actualTraceCount + " traces in Cassandra");
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                logger.warn("Got interrupted exception", 3);
+            }
             previousTraceCount = actualTraceCount;
             actualTraceCount = countTracesInCassandra(cassandraSession);
             iterations++;
@@ -266,8 +276,9 @@ public class SimpleTest {
     /**
      * For performance reasons Cassandra won't let us do a "select count(*) from traces" so instead we just have to do
      * "select * from traces" and count the number of rows it returns.
-     * @param session
-     * @return
+     *
+     * @param session An open Cassandra session to use for queries
+     * @return current number of traces found in Cassandra
      */
     private int countTracesInCassandra(Session session) {
         ResultSet result = session.execute("select * from traces");
@@ -300,6 +311,7 @@ public class SimpleTest {
                     span.setTag("iteration", i);
                     Thread.sleep(DELAY);
                 } catch (InterruptedException e) {
+                    logger.warn("Got interrupted exception", 3);
                 }
                 span.finish();
             }
