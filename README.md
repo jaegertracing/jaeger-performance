@@ -75,7 +75,7 @@ Start by downloading and building Jaeger based on the instructions under **Runni
 Note that unlike Cassandra with ElasticSearch there is no need to create a keyspace or database.
 
 #### Running ElasticSearch with Docker 
-`docker run -it --rm -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false"  docker.elastic.co/elasticsearch/elasticsearch:5.6.1`
+`docker run -it --rm -p 9200:9200 -p 9300:9300 -e "discovery.type=single-node" -e "xpack.security.enabled=false"  docker.elastic.co/elasticsearch/elasticsearch:6.1.2`
 
 #### Running a standalone ElasticSearch
 + Download from https://www.elastic.co/downloads/elasticsearch, extract, run `./bin/elasticsearch`

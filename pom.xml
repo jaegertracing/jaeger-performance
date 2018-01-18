@@ -10,7 +10,7 @@
 
     <properties>
         <cassandra.driver.core.version>3.3.2</cassandra.driver.core.version>
-        <elasticsearch.version>6.1.1</elasticsearch.version>
+        <elasticsearch.version>6.1.2</elasticsearch.version>
         <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
         <jackson.version>2.9.3</jackson.version>
         <jaeger.version>0.23.0</jaeger.version>
