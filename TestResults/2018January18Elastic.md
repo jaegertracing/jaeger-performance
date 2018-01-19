@@ -37,7 +37,7 @@ Tests were run with the following values
 + `Read Time` is the amount of additional time in seconds it takes before all of the traces appear in storage.  This time is not exact
 as the test will sleep for up to 30 seconds between queries to reduce load on the backend storage.
 + `Total test time` is the time reported by JUnit for the entire test to run
- + The expected number of traces for all test runs is 3000000
+ + The expected number of traces for all test runs is 3,000,000
  
 ## Results from Jaeger Mainline 
  
@@ -53,11 +53,11 @@ I started the agent with following command, where COLLECTOR_QUEUE_SIZE was 30000
 
 ` go run ./cmd/agent/main.go --collector.host-port=localhost:14267 --processor.jaeger-binary.server-queue-size=${COLLECTOR_QUEUE_SIZE} --processor.jaeger-compact.server-queue-size=${COLLECTOR_QUEUE_SIZE} --processor.zipkin-compact.server-queue-size=${COLLECTOR_QUEUE_SIZE}`
 
-|Run Number | Write Time | Read Time | Total Test Time |Traces Found |
-| ------------- | -----:|-----:|-----:|-----:|
-| 1 | 32.866 | 2,693.536 | 2,728.668 | 2827819 | 
-| 2 | 33.079 | 2,283.75 | 2,318.052 | 2398703 | ** Agent got some TChannel errors
-| 3 | 35.310 | 2,674.430 | 2,709.987 | 2813756 | 
+|Run Number | Write Time | Read Time | Total Test Time |Traces Found | Comments |
+| ------------- | -----:|-----:|-----:|-----:| -----:|
+| 1 | 32.866 | 2,693.536 | 2,728.668 | 2827819 | -----:|
+| 2 | 33.079 | 2,283.75 | 2,318.052 | 2398703 | ** Agent got some TChannel errors |
+| 3 | 35.310 | 2,674.430 | 2,709.987 | 2813756 | -----:|
 
 ## Results with ES Bulk PR
 I ran with the following collector command, where COLLECTOR_QUEUE_SIZE was 3000000
@@ -72,13 +72,13 @@ I ran with the following collector command, where COLLECTOR_QUEUE_SIZE was 30000
 | 3 | 41.541 | 89.209 | 131.213 | 3000000 |
 
 ## Results with Standalone ElasticSearch, Jaeger Collector and Agent run with PR applied
-|Run Number | Write Time | Read Time | Total Test Time | Traces Found |
-| ------------- | -----:|-----:|-----:| -----:|
-| 1 | 36.139 | 91.227 | 127.478 | 2733545 |  ** Got some TChannel errors
-| 2 | 36.018 | 0.0 | 0.0 | 0 |   ** Test got a connection timeout to ES instance; agent got multiple TChannel errors;
-| 3 | 36.575 | 82.150 | 118.839 | 2611344 | 
-| 4 | 242.760 | 176.434 | 419.947 | 2130834 | ** Lots of TChannel errors
-| 5 | 116.157 | 240.141 | 356.75 | 2274084 |
+|Run Number | Write Time | Read Time | Total Test Time | Traces Found | Comments |
+| ------------- | -----:|-----:|-----:| -----:| -----:|
+| 1 | 36.139 | 91.227 | 127.478 | 2733545 |  ** Got some TChannel errors |
+| 2 | 36.018 | 0.0 | 0.0 | 0 |   ** Test got a connection timeout to ES instance; agent got multiple TChannel errors; |
+| 3 | 36.575 | 82.150 | 118.839 | 2611344 | |
+| 4 | 242.760 | 176.434 | 419.947 | 2130834 | ** Lots of TChannel errors |
+| 5 | 116.157 | 240.141 | 356.75 | 2274084 | |
 
 ## Errors
 In second run using Pavol's PR and the Agent I got the following on the ElasticSearch console, and the test failed with
