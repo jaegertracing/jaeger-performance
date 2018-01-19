@@ -6,7 +6,7 @@ pipeline {
     }
     parameters {
         choice(choices: 'COLLECTOR\nAGENT', description: 'Write spans to the agent or the collector', name: 'USE_AGENT_OR_COLLECTOR')
-        choice(choices: 'cassandra\nelasticSearch', description: 'Span Storage', name: 'SPAN_STORAGE_TYPE')
+        choice(choices: 'elasticSearch\ncassandra', description: 'Span Storage', name: 'SPAN_STORAGE_TYPE')
         string(name: 'JAEGER_AGENT_HOST', defaultValue: 'localhost', description: 'Host where the agent is running')
         string(name: 'JAEGER_COLLECTOR_HOST', defaultValue: 'jaeger-collector.${PROJECT_NAME}.svc', description: 'Host where the collector is running')   // FIXME
         string(name: 'JAEGER_COLLECTOR_PORT', defaultValue: '14268', description: 'Collector port')
@@ -24,10 +24,7 @@ pipeline {
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         booleanParam(name: 'DELETE_EXAMPLE_AT_END', defaultValue: true, description: 'Delete the target application at end of the test')
     }
-    environment {
-        JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
-        COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
-    }
+
     stages {
         stage('Set name and description') {
             steps {
@@ -48,10 +45,6 @@ pipeline {
                 deleteDir()
                 script {
                         git 'https://github.com/Hawkular-QE/jaeger-standalone-performance-tests.git'
-                }
-                /* TODO Move...change to scm checkout?  Also We need to build here so stuff in common wil be available */
-                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.0'}/bin:${env.JAVA_HOME}/bin"]) {
-                    sh 'mvn -DskipITs clean install'
                 }
             }
         }
@@ -82,9 +75,11 @@ pipeline {
                /* Before using the template we need to add '--collector.queue-size=${COLLECTOR_QUEUE_SIZE}' to the collector startup,
                   as well as defining the 'COLLECTOR_QUEUE_SIZE' parameter         TODO only add ES options if we're using ElasticSearch?         */
                 sh '''
+                    export JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
+                    export COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     ./updateTemplate.sh
-                    oc process -pCOLLECTOR_QUEUE_SIZE="$(($ITERATIONS * $JMETER_CLIENT_COUNT * 3))" -pCOLLECTOR_PODS=${COLLECTOR_PODS} -pES_BULK_SIZE=${ES_BULK_SIZE} -p ES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL}-f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
+                    oc process -pCOLLECTOR_QUEUE_SIZE="${COLLECTOR_QUEUE_SIZE}" -pCOLLECTOR_PODS=${COLLECTOR_PODS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
                openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-query', verbose: 'false'
                openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
