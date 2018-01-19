@@ -19,8 +19,8 @@ This is a standalone Java junit test which models our Jaeger Instrumentation Per
 Test (See https://github.com/Hawkular-QE/jaeger-instrumentation-performance-tests) but
 is simpler to setup and run.   (See the top-level README.md for instructions)
 
-NOTE: For this set of tests I started the collector with the following command as with ElasticSearch as I was getting 
-many instances of the errors shown in the **Errors** section below
+NOTE: For this set of tests I started the collector with the following command 
+
 + `export SPAN_STORAGE_TYPE=elasticsearch`
 + `nohup go run ./cmd/collector/main.go --collector.queue-size=${COLLECTOR_QUEUE_SIZE} > log.txt`
 
