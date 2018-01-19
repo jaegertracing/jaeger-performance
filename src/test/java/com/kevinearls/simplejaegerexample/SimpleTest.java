@@ -78,9 +78,7 @@ public class SimpleTest {
 
     @After
     public void tearDown() throws Exception {
-        Thread.sleep(JAEGER_FLUSH_INTERVAL);
-        com.uber.jaeger.Tracer jaegerTracer = (com.uber.jaeger.Tracer) tracer;
-        jaegerTracer.close();
+        closeTracer();
     }
 
     private static Tracer jaegerTracer() {
@@ -136,6 +134,17 @@ public class SimpleTest {
         logger.info("Traces contains " + traceCount + " entries");
     }
 
+
+    private void closeTracer() {
+        try {
+            Thread.sleep(JAEGER_FLUSH_INTERVAL);
+        } catch (InterruptedException e) {
+            logger.warn("Interrupted Exception", e);
+        }
+        com.uber.jaeger.Tracer jaegerTracer = (com.uber.jaeger.Tracer) tracer;
+        jaegerTracer.close();
+    }
+
     /**
      * This is the primary test.  Create the specified number of traces, and then verify that they exist in
      * whichever storage back end we have selected.
@@ -157,6 +166,8 @@ public class SimpleTest {
         long createEndTime = System.currentTimeMillis();
         long duration = createEndTime - createStartTime;
         logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds");
+
+        closeTracer();
 
         // Validate trace count here
         int expectedTraceCount = THREAD_COUNT * ITERATIONS;
@@ -196,7 +207,7 @@ public class SimpleTest {
         int actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
         final int startTraceCount = actualTraceCount;
         int iterations = 0;
-        long sleepDelay = Math.max(5, expectedTraceCount / 100000);   // delay 1 second for every 100,000 traces
+        final long sleepDelay = 10L;   // TODO externalize?
         logger.info("Setting SLEEP DELAY " + sleepDelay + " seconds");
         logger.info("Actual Trace count " + actualTraceCount);
         while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
