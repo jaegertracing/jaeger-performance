@@ -10,7 +10,7 @@ For a basic test run, set at least these environment variables
 + export USE_AGENT_OR_COLLECTOR=collector /// optional defaults to agent
 + export JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))  
 + export COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
-+ `export JAEGER_STORAGE=cassandra` or `export JAEGER_STORAGE=elastic`
++ `export SPAN_STORAGE_TYPE=cassandra` or `export SPAN_STORAGE_TYPE=elasticsearch`
 
 ## Download and build Jaeger
 Download the Jaeger source and build it based on the instructions under **Running Individual Jaeger Components** from https://jaeger.readthedocs.io/en/latest/getting_started/
@@ -92,7 +92,7 @@ Note that unlike Cassandra with ElasticSearch there is no need to create a keysp
 ### Checkout and run the tests
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
-+ `export JAEGER_STORAGE=elastic`
++ `export SPAN_STORAGE_TYPE=elasticsearch`
 + `mvn clean -Dtest=SimpleTest#createTracesTest test`
 
 ### To empty the traces table between runs

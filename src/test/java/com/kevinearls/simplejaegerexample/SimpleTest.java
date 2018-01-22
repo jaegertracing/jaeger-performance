@@ -25,6 +25,8 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Map;
@@ -61,7 +63,7 @@ public class SimpleTest {
     private static final Integer JAEGER_MAX_PACKET_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_PACKET_SIZE", "0"));
     private static final Integer JAEGER_MAX_QUEUE_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_QUEUE_SIZE", "100000"));
     private static final Double JAEGER_SAMPLING_RATE = new Double(envs.getOrDefault("JAEGER_SAMPLING_RATE", "1.0"));
-    private static final String JAEGER_STORAGE = envs.getOrDefault("JAEGER_STORAGE", "cassandra");
+    private static final String SPAN_STORAGE_TYPE = envs.getOrDefault("SPAN_STORAGE_TYPE", "cassandra");
     private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "5775"));
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
     private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
@@ -120,7 +122,7 @@ public class SimpleTest {
     public void countTraces() throws Exception {
         int traceCount = 0;
 
-        if (JAEGER_STORAGE.equalsIgnoreCase("cassandra")) {
+        if (SPAN_STORAGE_TYPE.equalsIgnoreCase("cassandra")) {
             Session cassandraSession = getCassandraSession();
             traceCount = countTracesInCassandra(cassandraSession);
         } else {
@@ -155,7 +157,7 @@ public class SimpleTest {
     public void createTracesTest() throws Exception {
         logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
         AtomicInteger threadId = new AtomicInteger(0);
-        final long createStartTime = System.currentTimeMillis();
+        final Instant createStartTime = Instant.now();
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
         for (int i = 0; i < THREAD_COUNT; i++) {
             Runnable worker = new WriteSomeTraces(tracer, ITERATIONS, threadId.incrementAndGet());
@@ -163,8 +165,8 @@ public class SimpleTest {
         }
         executor.shutdown();
         executor.awaitTermination(30, TimeUnit.MINUTES);
-        long createEndTime = System.currentTimeMillis();
-        long duration = createEndTime - createStartTime;
+        final Instant createEndTime = Instant.now();
+        long duration = Duration.between(createStartTime, createEndTime).toMillis();
         logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds");
 
         closeTracer();
@@ -173,7 +175,7 @@ public class SimpleTest {
         int expectedTraceCount = THREAD_COUNT * ITERATIONS;
         int actualTraceCount;
 
-        if (JAEGER_STORAGE.equalsIgnoreCase("cassandra")) {
+        if (SPAN_STORAGE_TYPE.equalsIgnoreCase("cassandra")) {
             logger.info("Validating Cassandra Traces");
             actualTraceCount = validateCassandraTraces(expectedTraceCount);
         } else {
@@ -181,8 +183,8 @@ public class SimpleTest {
             actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
         }
 
-        long countEndTime = System.currentTimeMillis();
-        long countDuration = countEndTime - createEndTime;
+        Instant countEndTime = Instant.now();
+        long countDuration = Duration.between(createEndTime, countEndTime).toMillis();
         logger.info("Counting " + actualTraceCount + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
         assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
     }
