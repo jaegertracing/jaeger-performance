@@ -137,7 +137,6 @@ public class SimpleTest {
             traceCount = getElasticSearchTraceCount(restClient, targetUrlString);
         }
         logger.info("Traces contains " + traceCount + " entries");
-        Files.write(Paths.get("traceCount.txt"), Long.toString(traceCount).getBytes(), StandardOpenOption.CREATE);
     }
 
 
@@ -186,6 +185,7 @@ public class SimpleTest {
             logger.info("Validating ES Traces");
             actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
         }
+        Files.write(Paths.get("traceCount.txt"), Long.toString(actualTraceCount).getBytes(), StandardOpenOption.CREATE);
 
         Instant countEndTime = Instant.now();
         long countDuration = Duration.between(createEndTime, countEndTime).toMillis();
