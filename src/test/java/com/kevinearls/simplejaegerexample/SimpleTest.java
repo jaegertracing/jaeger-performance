@@ -25,6 +25,9 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -53,7 +56,7 @@ public class SimpleTest {
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "localhost");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
-    private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "localhost");
+    private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "elasticsearch");
     private static final Integer ELASTICSEARCH_PORT = new Integer(envs.getOrDefault("ELASTICSEARCH_PORT", "9200"));
     private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "3000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
@@ -134,6 +137,7 @@ public class SimpleTest {
             traceCount = getElasticSearchTraceCount(restClient, targetUrlString);
         }
         logger.info("Traces contains " + traceCount + " entries");
+        Files.write(Paths.get("traceCount.txt"), Long.toString(traceCount).getBytes(), StandardOpenOption.CREATE);
     }
 
 
@@ -230,6 +234,7 @@ public class SimpleTest {
     }
 
     private RestClient getESRestClient() {
+        logger.debug("Connecting to elasticsearch using host " + ELASTICSEARCH_HOST + " and port " + ELASTICSEARCH_PORT);
         return RestClient.builder(
                     new HttpHost(ELASTICSEARCH_HOST, ELASTICSEARCH_PORT, "http"),
                     new HttpHost(ELASTICSEARCH_HOST, ELASTICSEARCH_PORT + 1, "http"))
