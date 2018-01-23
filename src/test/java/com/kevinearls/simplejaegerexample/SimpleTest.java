@@ -53,8 +53,8 @@ public class SimpleTest {
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "localhost");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
-    private static final String ES_HOST = envs.getOrDefault("ES_HOST", "localhost");
-    private static final Integer ES_PORT = new Integer(envs.getOrDefault("ES_PORT", "9200"));
+    private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "localhost");
+    private static final Integer ELASTICSEARCH_PORT = new Integer(envs.getOrDefault("ELASTICSEARCH_PORT", "9200"));
     private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "3000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
@@ -231,8 +231,8 @@ public class SimpleTest {
 
     private RestClient getESRestClient() {
         return RestClient.builder(
-                    new HttpHost(ES_HOST, ES_PORT, "http"),
-                    new HttpHost(ES_HOST, ES_PORT + 1, "http"))
+                    new HttpHost(ELASTICSEARCH_HOST, ELASTICSEARCH_PORT, "http"),
+                    new HttpHost(ELASTICSEARCH_HOST, ELASTICSEARCH_PORT + 1, "http"))
                     .build();
     }
 
