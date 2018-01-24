@@ -50,7 +50,6 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
-                /* git 'https://github.com/Hawkular-QE/jaeger-standalone-performance-tests.git'
                 sh 'ls -alF'
             }
         }
