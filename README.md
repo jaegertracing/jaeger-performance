@@ -7,7 +7,6 @@ can be used for storage.  Then we can run everything either from source or using
 For a basic test run, set at least these environment variables
 + export THREAD_COUNT=100
 + export ITERATIONS=30000
-+ export USE_AGENT_OR_COLLECTOR=collector /// optional defaults to agent
 + export JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))  
 + export COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
 + `export SPAN_STORAGE_TYPE=cassandra` or `export SPAN_STORAGE_TYPE=elasticsearch`
@@ -63,6 +62,7 @@ Start by downloading and building Jaeger based on the instructions under **Runni
 ## Running the tests
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
++ Optional: `export CASSANDRA_CLUSTER_IP=localhost` or wherever cassandra is running, default is cassandra
 + `mvn clean -Dtest=SimpleTest#createTracesTest test`
 
 ### To get a count of traces 
@@ -93,6 +93,7 @@ Note that unlike Cassandra with ElasticSearch there is no need to create a keysp
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
 + `export SPAN_STORAGE_TYPE=elasticsearch`
++ `export ELASTICSEARCH_HOST = localhost` or wherever elasticsearch is running, default is elasticsearch
 + `mvn clean -Dtest=SimpleTest#createTracesTest test`
 
 ### To empty the traces table between runs
