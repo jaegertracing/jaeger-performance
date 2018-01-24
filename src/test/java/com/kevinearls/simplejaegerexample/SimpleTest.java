@@ -20,7 +20,6 @@ import com.uber.jaeger.samplers.Sampler;
 import com.uber.jaeger.senders.HttpSender;
 import com.uber.jaeger.senders.Sender;
 import com.uber.jaeger.senders.UdpSender;
-
 import io.opentracing.Span;
 import io.opentracing.Tracer;
 
@@ -32,9 +31,14 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -49,16 +53,15 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
 
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "cassandra");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
+    private static final Integer DURATION_IN_MINUTES = new Integer(envs.getOrDefault("DURATION_IN_MINUTES", "5"));
     private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "elasticsearch");
     private static final Integer ELASTICSEARCH_PORT = new Integer(envs.getOrDefault("ELASTICSEARCH_PORT", "9200"));
-    private static final Integer ITERATIONS = new Integer(envs.getOrDefault("ITERATIONS", "3000"));
     private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
     private static final String JAEGER_COLLECTOR_PORT = envs.getOrDefault("MY_JAEGER_COLLECTOR_PORT", "14268");
@@ -151,46 +154,56 @@ public class SimpleTest {
     }
 
     /**
-     * This is the primary test.  Create the specified number of traces, and then verify that they exist in
+     * This is the primary test.  Create the traces, and then verify that they exist in
      * whichever storage back end we have selected.
      *
      * @throws Exception of some sort
      */
     @Test
     public void createTracesTest() throws Exception {
-        logger.info("Starting with " + THREAD_COUNT + " threads for " + ITERATIONS + " iterations with a delay of " + DELAY);
-        AtomicInteger threadId = new AtomicInteger(0);
+        logger.info("Starting with " + THREAD_COUNT + " threads for " + DURATION_IN_MINUTES + " minutes with a delay of " + DELAY);
         final Instant createStartTime = Instant.now();
         ExecutorService executor = Executors.newFixedThreadPool(THREAD_COUNT);
+        List<Future<Integer>> workers = new ArrayList<>();
+
         for (int i = 0; i < THREAD_COUNT; i++) {
-            Runnable worker = new WriteSomeTraces(tracer, ITERATIONS, threadId.incrementAndGet());
-            executor.execute(worker);
+            Callable<Integer> worker = new WriteTraces(tracer, DURATION_IN_MINUTES, i);
+            Future<Integer> created = executor.submit(worker);
+            workers.add(created);
         }
         executor.shutdown();
-        executor.awaitTermination(30, TimeUnit.MINUTES);
+        executor.awaitTermination(DURATION_IN_MINUTES + 1, TimeUnit.MINUTES);
+
+        int tracesCreated = 0;
+        for (Future<Integer> worker : workers) {
+            int traceeCount = worker.get();
+            logger.info("Got " + traceeCount + " traces");
+            tracesCreated += traceeCount;
+        }
+        logger.info("Got a total of " + tracesCreated + " traces");
+
         final Instant createEndTime = Instant.now();
         long duration = Duration.between(createStartTime, createEndTime).toMillis();
-        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + THREAD_COUNT * ITERATIONS + " spans" + " in " + duration + " milliseconds");
+        logger.info("Finished all " + THREAD_COUNT + " threads; Created " + tracesCreated + " traces" + " in " + duration + " milliseconds");
 
         closeTracer();
 
         // Validate trace count here
-        int expectedTraceCount = THREAD_COUNT * ITERATIONS;
         int actualTraceCount;
 
         if (SPAN_STORAGE_TYPE.equalsIgnoreCase("cassandra")) {
             logger.info("Validating Cassandra Traces");
-            actualTraceCount = validateCassandraTraces(expectedTraceCount);
+            actualTraceCount = validateCassandraTraces(tracesCreated);
         } else {
             logger.info("Validating ES Traces");
-            actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
+            actualTraceCount = validateElasticSearchTraces(tracesCreated);
         }
         Files.write(Paths.get("traceCount.txt"), Long.toString(actualTraceCount).getBytes(), StandardOpenOption.CREATE);
 
         Instant countEndTime = Instant.now();
         long countDuration = Duration.between(createEndTime, countEndTime).toMillis();
         logger.info("Counting " + actualTraceCount + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
-        assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
+        assertEquals("Did not find expected number of traces", tracesCreated, actualTraceCount);
     }
 
     /**
@@ -308,33 +321,40 @@ public class SimpleTest {
         return totalTraceCount;
     }
 
-    class WriteSomeTraces implements Runnable {
+    class WriteTraces implements Callable<Integer> {
         Tracer tracer;
-        int iterations;
         int id;
+        int durationInMinutes;
 
-        public WriteSomeTraces(Tracer tracer, int iterations, int id) {
+        public WriteTraces(Tracer tracer, int durationInMinutes, int id) {
             this.tracer = tracer;
-            this.iterations = iterations;
+            this.durationInMinutes = durationInMinutes;
             this.id = id;
         }
 
         @Override
-        public void run() {
+        public Integer call() throws Exception {
+            int  spanCount = 0;
             String s = "Thread " + id;
             logger.debug("Starting " + s);
-            for (int i = 0; i < iterations; i++) {
+
+            Instant finish = Instant.now().plus(durationInMinutes, ChronoUnit.MINUTES);
+            while (Instant.now().isBefore(finish)) {
                 Span span = tracer.buildSpan(s).start();
                 try {
-                    span.setTag("iteration", i);
+                    span.setTag("iteration", spanCount);
+                    spanCount++;
                     Thread.sleep(DELAY);
                 } catch (InterruptedException e) {
                     logger.warn("Got interrupted exception", 3);
                 }
                 span.finish();
             }
+
+            return spanCount;
         }
     }
+
 
     class RowCountingConsumer implements Consumer<Row> {
         AtomicInteger rowCount = new AtomicInteger(0);

@@ -6,9 +6,8 @@ can be used for storage.  Then we can run everything either from source or using
 ## Environment setup
 For a basic test run, set at least these environment variables
 + export THREAD_COUNT=100
-+ export ITERATIONS=30000
-+ export JAEGER_MAX_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))  
-+ export COLLECTOR_QUEUE_SIZE=$(($ITERATIONS * $THREAD_COUNT))
++ export DURATION_IN_MINUTES=5
++ export COLLECTOR_QUEUE_SIZE=3000000   // TODO how should we calculate this??
 + `export SPAN_STORAGE_TYPE=cassandra` or `export SPAN_STORAGE_TYPE=elasticsearch`
 
 ## Download and build Jaeger
