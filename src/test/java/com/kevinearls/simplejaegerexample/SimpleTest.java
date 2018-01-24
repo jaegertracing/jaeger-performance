@@ -53,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class SimpleTest {
     private static final Map<String, String> envs = System.getenv();
 
-    private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "localhost");
+    private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "cassandra");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
     private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "elasticsearch");
