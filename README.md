@@ -82,7 +82,9 @@ Note that unlike Cassandra with ElasticSearch there is no need to create a keysp
 ### Running Jaeger
 
 #### Starting the Collector and Agent with ElasticSearch
-`go run ./cmd/collector/main.go --collector.queue-size=${COLLECTOR_QUEUE_SIZE} --span-storage.type=elasticsearch `
++ `export SPAN_STORAGE_TYPE=elasticsearch`
++ `go run ./cmd/collector/main.go --collector.queue-size=${COLLECTOR_QUEUE_SIZE} --es.bulk.size=10000000 --es.bulk.workers=10 --es.bulk.flush-interval=1s`
+Note that the `-es.` arguments are optional but may be needed for long running tests
 
 #### TODO run Agent, UI.  Or just say they are not needed for these tests?
 
@@ -99,7 +101,7 @@ Note that unlike Cassandra with ElasticSearch there is no need to create a keysp
 + `curl -X DELETE localhost:9200/jaeger-*`
 
 ### To get a count of traces 
-+ `curl http://localhost:9200/jaeger-span-2017-12-12/_count` (after changing the date)
++ `curl http://localhost:9200/jaeger-span-2018-01-25/_count` (after changing the date.  Format is yyyy-mm-dd)
 
 
 
