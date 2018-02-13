@@ -94,7 +94,7 @@ Note that the `-es.` arguments are optional but may be needed for long running t
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
 + `export SPAN_STORAGE_TYPE=elasticsearch`
-+ `export ELASTICSEARCH_HOST = localhost` or wherever elasticsearch is running, default is elasticsearch
++ `export ELASTICSEARCH_HOST=localhost` or wherever elasticsearch is running, default is elasticsearch
 + `mvn clean -Dtest=SimpleTest#createTracesTest test`
 
 ### To empty the traces table between runs
