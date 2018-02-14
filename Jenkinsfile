@@ -17,11 +17,11 @@ pipeline {
     parameters {
         choice(choices: 'COLLECTOR\nAGENT', name: 'USE_AGENT_OR_COLLECTOR')
         choice(choices: 'elasticsearch\ncassandra',  name: 'SPAN_STORAGE_TYPE')
+        string(name: 'DURATION_IN_MINUTES', defaultValue: '5', description: 'Amount of time each worker should run')
         string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
-        string(name: 'ITERATIONS', defaultValue: '30000', description: 'The number of iterations each client should execute')
         string(name: 'DELAY', defaultValue: '10', description: 'delay in milliseconds between each span creation')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
@@ -107,16 +107,19 @@ pipeline {
         }
         stage('Run tests'){
             steps{
-                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.0'}/bin:${env.JAVA_HOME}/bin"]) {
+                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
                     sh 'git status'
+                    sh 'mvn -Dtest=false -DfailIfNoTests=false -DskipITs clean install'
                     sh 'mvn exec:java'
-                    env.TRACE_COUNT=readFile 'common/traceCount.txt'
-                    sh 'mvn clean -DexpectedTraceCount=${TRACE_COUNT} test'
                 }
-                 script {
+                script {
                     env.TRACE_COUNT=readFile 'traceCount.txt'
                     currentBuild.description = currentBuild.description + " Trace count " + env.TRACE_COUNT
                 }
+                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
+                    sh 'mvn clean -DexpectedTraceCount=${TRACE_COUNT} test'
+                }
+
             }
         }
         stage('Delete Jaeger at end') {
