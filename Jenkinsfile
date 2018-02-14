@@ -22,7 +22,7 @@ pipeline {
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
         string(name: 'ITERATIONS', defaultValue: '30000', description: 'The number of iterations each client should execute')
-        string(name: 'DELAY', defaultValue: '1', description: 'delay in milliseconds between each span creation')
+        string(name: 'DELAY', defaultValue: '10', description: 'delay in milliseconds between each span creation')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
 
@@ -109,7 +109,9 @@ pipeline {
             steps{
                 withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.0'}/bin:${env.JAVA_HOME}/bin"]) {
                     sh 'git status'
-                    sh 'mvn clean -Dtest=SimpleTest#createTracesTest test'
+                    sh 'mvn exec:java'
+                    env.TRACE_COUNT=readFile 'common/traceCount.txt'
+                    sh 'mvn clean -DexpectedTraceCount=${TRACE_COUNT} test'
                 }
                  script {
                     env.TRACE_COUNT=readFile 'traceCount.txt'

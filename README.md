@@ -62,10 +62,8 @@ Start by downloading and building Jaeger based on the instructions under **Runni
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
 + Optional: `export CASSANDRA_CLUSTER_IP=localhost` or wherever cassandra is running, default is cassandra
-+ `mvn clean -Dtest=SimpleTest#createTracesTest test`
-
-### To get a count of traces 
-`mvn clean -Dtest=SimpleTest#countTraces test`
++ `mvn exec:java`
++ `mvn clean -DexpectedTraceCount=nnnnnn test`  where nnnnnn is the trace count output by the previous step
 
 ### To empty the traces keyspace between runs
 `cqlsh --keyspace=jaeger_v1_test --execute="truncate traces;"`
@@ -95,7 +93,8 @@ Note that the `-es.` arguments are optional but may be needed for long running t
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
 + `export SPAN_STORAGE_TYPE=elasticsearch`
 + `export ELASTICSEARCH_HOST=localhost` or wherever elasticsearch is running, default is elasticsearch
-+ `mvn clean -Dtest=SimpleTest#createTracesTest test`
++ `mvn exec:java`
++ `mvn clean -DexpectedTraceCount=nnnnnn test`  where nnnnnn is the trace count output by the previous step
 
 ### To empty the traces table between runs
 + `curl -X DELETE localhost:9200/jaeger-*`
