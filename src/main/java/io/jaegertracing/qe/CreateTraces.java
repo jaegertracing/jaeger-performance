@@ -123,7 +123,7 @@ public class CreateTraces {
         int tracesCreated = 0;
         for (Future<Integer> worker : workers) {
             int traceCount = worker.get();
-            logger.info("Got " + traceCount + " traces");
+            logger.info("Got " + numberFormat.format(traceCount) + " traces");
             tracesCreated += traceCount;
         }
         logger.info("Got a total of " + numberFormat.format(tracesCreated) + " traces");

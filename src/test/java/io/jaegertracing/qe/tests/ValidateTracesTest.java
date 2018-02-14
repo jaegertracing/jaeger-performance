@@ -13,6 +13,7 @@ import io.opentracing.Span;
 import io.opentracing.Tracer;
 
 import java.io.IOException;
+import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -43,11 +44,12 @@ public class ValidateTracesTest {
     private static final String SPAN_STORAGE_TYPE = envs.getOrDefault("SPAN_STORAGE_TYPE", "cassandra");
 
     private static final Logger logger = LoggerFactory.getLogger(ValidateTracesTest.class.getName());
+    private NumberFormat numberFormat = NumberFormat.getInstance();
 
     @Test
     public void countTraces() throws Exception {
         int expectedTraceCount = Integer.valueOf(System.getProperty("expectedTraceCount"));
-        logger.info("EXPECTED_TRACE_COUNT " + expectedTraceCount);
+        logger.info("EXPECTED_TRACE_COUNT " + numberFormat.format(expectedTraceCount));
 
         Instant startTime = Instant.now();
         int actualTraceCount = 0;
@@ -61,7 +63,7 @@ public class ValidateTracesTest {
 
         Instant countEndTime = Instant.now();
         long countDuration = Duration.between(startTime, countEndTime).toMillis();
-        logger.info("Counting " + actualTraceCount + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
+        logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
         assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
     }
 
@@ -87,8 +89,9 @@ public class ValidateTracesTest {
         final int startTraceCount = actualTraceCount;
         int iterations = 0;
         final long sleepDelay = 10L;
+
         logger.info("Setting SLEEP DELAY " + sleepDelay + " seconds");
-        logger.info("Actual Trace count " + actualTraceCount);
+        logger.info("Actual Trace count " + numberFormat.format(actualTraceCount));
         while (actualTraceCount < expectedTraceCount && previousTraceCount < actualTraceCount) {
             try {
                 TimeUnit.SECONDS.sleep(sleepDelay);
@@ -97,12 +100,13 @@ public class ValidateTracesTest {
             }
             previousTraceCount = actualTraceCount;
             actualTraceCount = getElasticSearchTraceCount(restClient, targetUrlString);
-            logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
+            logger.info("FOUND " + numberFormat.format(actualTraceCount) + " traces in ElasticSearch");
             iterations++;
         }
 
-        logger.info("It took " + iterations  + " iterations to go from " + startTraceCount + " to " + actualTraceCount + " traces");
-        logger.info("FOUND " + actualTraceCount + " traces in ElasticSearch");
+        logger.info("It took " + iterations  + " iterations to go from " + numberFormat.format(startTraceCount)
+                + " to " + numberFormat.format(actualTraceCount) + " traces");
+        logger.info("FOUND " + numberFormat.format(actualTraceCount) + " traces in ElasticSearch");
         return actualTraceCount;
     }
 
