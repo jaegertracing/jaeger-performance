@@ -183,6 +183,13 @@
                             </execution>
                         </executions>
                         <configuration>
+                            <enricher>
+                                <config>
+                                    <fmp-controller>
+                                        <type>Job</type>
+                                    </fmp-controller>
+                                </config>
+                            </enricher>
                             <resources>
                                 <env>
                                     <DELAY>${delay}</DELAY>
