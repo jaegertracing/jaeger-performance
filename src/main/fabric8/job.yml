@@ -1,6 +1,7 @@
 spec:
   template:
     spec:
+      restartPolicy: Never
       containers:
       - name: jaeger-standalone-performance-test
       - name: jaeger-agent
