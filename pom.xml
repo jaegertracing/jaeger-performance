@@ -14,7 +14,7 @@
         <checkstyle.version>8.8</checkstyle.version>
         <elasticsearch.version>5.6.6</elasticsearch.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
-        <fabric8-maven-plugin.version>3.5.33</fabric8-maven-plugin.version>
+        <fabric8-maven-plugin.version>3.5.35</fabric8-maven-plugin.version>
         <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
         <jackson.version>2.9.4</jackson.version>
         <jaeger.version>0.24.0</jaeger.version>
