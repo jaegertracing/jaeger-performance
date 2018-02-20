@@ -22,19 +22,18 @@ pipeline {
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
-        string(name: 'DELAY', defaultValue: '10', description: 'delay in milliseconds between each span creation')
+        string(name: 'DELAY', defaultValue: '100', description: 'delay in milliseconds between each span creation')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
     }
-
     stages {
         stage('Set name and description') {
             steps {
                 script {
-                    currentBuild.displayName =params.USE_AGENT_OR_COLLECTOR +" " + params.SPAN_STORAGE_TYPE + " " + params.THREAD_COUNT + " " + params.ITERATIONS + " " + params.JAEGER_SAMPLING_RATE
+                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.THREAD_COUNT + " X " + params.DURATION_IN_MINUTES + " min " + params.JAEGER_SAMPLING_RATE
                     currentBuild.description = currentBuild.displayName
                 }
             }
@@ -45,7 +44,13 @@ pipeline {
                 sh 'env | sort'
             }
         }
+        stage('Delete Old Job') {
+            steps {
+                sh 'oc delete job jaeger-standalone-performance-tests || true'
+            }
+        }
         stage('Cleanup, checkout, build') {
+        /* FIXME restore checkout scm */
             steps {
                 deleteDir()
                 checkout scm
@@ -104,19 +109,14 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
+        /* For Agent we need to deploy */
         stage('Run tests'){
             steps{
                 withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
                     sh 'git status'
                     sh 'mvn -Dtest=false -DfailIfNoTests=false -DskipITs clean install'
-                    sh 'mvn exec:java'
-                }
-                script {
-                    env.TRACE_COUNT=readFile 'traceCount.txt'
-                    currentBuild.description = currentBuild.description + " Trace count " + env.TRACE_COUNT
-                }
-                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
-                    sh 'mvn clean -DexpectedTraceCount=${TRACE_COUNT} test'
+                    sh 'mvn --activate-profiles openshift -Dtest=false -DfailIfNoTests=false clean install fabric8:deploy -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}'
+                    sh 'mvn clean test'
                 }
 
             }
@@ -129,6 +129,11 @@ pipeline {
                 script {
                     sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
                 }
+            }
+        }
+        stage('Delete Job at end') {
+            steps {
+                sh 'oc delete job jaeger-standalone-performance-tests || true'
             }
         }
         stage('Cleanup pods') {
