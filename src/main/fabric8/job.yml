@@ -3,7 +3,7 @@ spec:
     spec:
       restartPolicy: Never
       containers:
-      - name: jaeger-standalone-performance-test
+      - name: jaeger-standalone-performance-tests
       - name: jaeger-agent
         image: jaegertracing/jaeger-agent
         ports:
@@ -16,4 +16,4 @@ spec:
           protocol: UDP
         command:
         - "/go/bin/agent-linux"
-        - "--collector.host-port=jaeger-collector.jaeger-infra.svc:14267"
+        - "--collector.host-port=jaeger-collector:14267"
