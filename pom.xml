@@ -14,17 +14,23 @@
         <checkstyle.version>8.8</checkstyle.version>
         <elasticsearch.version>5.6.6</elasticsearch.version>
         <exec-maven-plugin.version>1.6.0</exec-maven-plugin.version>
+        <fabric8.kubernetes.client.version>3.1.8</fabric8.kubernetes.client.version>
+        <fabric8.kubernetes.model.version>2.0.8</fabric8.kubernetes.model.version>
         <fabric8-maven-plugin.version>3.5.35</fabric8-maven-plugin.version>
+        <fabric8.openshift.client.version>3.1.8</fabric8.openshift.client.version>
         <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
         <jackson.version>2.9.4</jackson.version>
         <jaeger.version>0.24.0</jaeger.version>
         <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
+        <log4j.version>1.2.17</log4j.version>
         <maven.checkstyle.plugin.version>2.17</maven.checkstyle.plugin.version>
         <maven.compiler.plugin.version>3.7.0</maven.compiler.plugin.version>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
         <maven.versions.plugin.version>2.5</maven.versions.plugin.version>
+        <okhttp3.version>3.9.0</okhttp3.version>
+        <slf4j.version>1.7.25</slf4j.version>
 
         <!-- Default parameter values for deploying to OpenShift -->
         <delay>10</delay>
@@ -62,17 +68,37 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.25</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-log4j12</artifactId>
-            <version>1.7.25</version>
+            <version>${slf4j.version}</version>
         </dependency>
         <dependency>
             <groupId>log4j</groupId>
             <artifactId>log4j</artifactId>
-            <version>1.2.17</version>
+            <version>${log4j.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>openshift-client</artifactId>
+            <version>${fabric8.openshift.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-client</artifactId>
+            <version>${fabric8.kubernetes.client.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>io.fabric8</groupId>
+            <artifactId>kubernetes-model</artifactId>
+            <version>${fabric8.kubernetes.model.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>${okhttp3.version}</version>
         </dependency>
 
         <dependency>
