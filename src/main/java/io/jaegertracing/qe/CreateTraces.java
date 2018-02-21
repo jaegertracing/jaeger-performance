@@ -52,6 +52,8 @@ public class CreateTraces {
     private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "COLLECTOR");
     private static final String USE_LOGGING_REPORTER = envs.getOrDefault("USE_LOGGING_REPORTER", "false");
 
+    public static final String TRACES_CREATED_MESSAGE = "TRACES_CREATED: ";
+
     private static final Logger logger = LoggerFactory.getLogger(CreateTraces.class);
     private static Tracer tracer;
 
@@ -126,15 +128,13 @@ public class CreateTraces {
             logger.info("Got " + numberFormat.format(traceCount) + " traces");
             tracesCreated += traceCount;
         }
-        logger.info("Got a total of " + numberFormat.format(tracesCreated) + " traces");
+        logger.info(TRACES_CREATED_MESSAGE + tracesCreated);
         Files.write(Paths.get("traceCount.txt"), Long.toString(tracesCreated).getBytes(), StandardOpenOption.CREATE);
 
         final Instant createEndTime = Instant.now();
         long duration = Duration.between(createStartTime, createEndTime).toMillis();
         logger.info("Finished all " + THREAD_COUNT + " threads; Created " + numberFormat.format(tracesCreated) + " traces" + " in " + duration + " milliseconds");
-
-        System.setProperty("EATME", "" + tracesCreated);
-
+        
         closeTracer();
     }
 

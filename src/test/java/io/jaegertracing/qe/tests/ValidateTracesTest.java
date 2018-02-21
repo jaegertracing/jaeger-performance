@@ -1,6 +1,9 @@
 package io.jaegertracing.qe.tests;
 
+import static io.jaegertracing.qe.CreateTraces.TRACES_CREATED_MESSAGE;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.datastax.driver.core.Cluster;
 import com.datastax.driver.core.ResultSet;
@@ -9,8 +12,10 @@ import com.datastax.driver.core.Session;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.opentracing.Span;
-import io.opentracing.Tracer;
+import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.openshift.client.DefaultOpenShiftClient;
+import io.fabric8.openshift.client.OpenShiftClient;
+import io.jaegertracing.qe.tests.util.PodWatcher;
 
 import java.io.IOException;
 import java.text.NumberFormat;
@@ -18,9 +23,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Callable;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
@@ -36,19 +41,26 @@ import org.slf4j.LoggerFactory;
 public class ValidateTracesTest {
     private static final Map<String, String> envs = System.getenv();
 
+    public static final String APPLICATION_NAME = envs.getOrDefault("APPLICATION_NAME", "jaeger-standalone-performance-tests");
     private static final String CASSANDRA_CLUSTER_IP = envs.getOrDefault("CASSANDRA_CLUSTER_IP", "cassandra");
     private static final String CASSANDRA_KEYSPACE_NAME = envs.getOrDefault("CASSANDRA_KEYSPACE_NAME", "jaeger_v1_test");
-    private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
+    private static final Integer DURATION_IN_MINUTES = new Integer(envs.getOrDefault("DURATION_IN_MINUTES", "5"));
     private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "elasticsearch");
     private static final Integer ELASTICSEARCH_PORT = new Integer(envs.getOrDefault("ELASTICSEARCH_PORT", "9200"));
     private static final String SPAN_STORAGE_TYPE = envs.getOrDefault("SPAN_STORAGE_TYPE", "cassandra");
+    private static final Boolean RUNNING_IN_OPENSHIFT = Boolean.valueOf(envs.getOrDefault("RUNNING_IN_OPENSHIFT", "true"));
 
     private static final Logger logger = LoggerFactory.getLogger(ValidateTracesTest.class.getName());
     private NumberFormat numberFormat = NumberFormat.getInstance();
 
     @Test
     public void countTraces() throws Exception {
-        int expectedTraceCount = Integer.valueOf(System.getProperty("expectedTraceCount"));
+        Integer expectedTraceCount = 0;
+        if (RUNNING_IN_OPENSHIFT) {
+            expectedTraceCount = getExpectedTraceCountFromPods();
+        } else {
+            expectedTraceCount = Integer.valueOf(System.getProperty("expectedTraceCount"));
+        }
         logger.info("EXPECTED_TRACE_COUNT " + numberFormat.format(expectedTraceCount));
 
         Instant startTime = Instant.now();
@@ -64,7 +76,72 @@ public class ValidateTracesTest {
         Instant countEndTime = Instant.now();
         long countDuration = Duration.between(startTime, countEndTime).toMillis();
         logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
-        assertEquals("Did not find expected number of traces", expectedTraceCount, actualTraceCount);
+        assertEquals("Did not find expected number of traces", expectedTraceCount.intValue(), actualTraceCount);
+    }
+
+    /**
+     * This method uses the fabric8 openshift client to:
+     * -- Find out how many pods are running the test application
+     * -- Setting up watchers to wait until they finish their work
+     * -- Getting the number of traces created from their logs
+     *
+     * The last part is a bit hacky but is the best solution I could come up with for the moment
+     *
+     * @return The number of traces created by all pods
+     * @throws InterruptedException only if sleeps are interrupted
+     */
+    private Integer getExpectedTraceCountFromPods() throws InterruptedException {
+        Thread.sleep(30 * 1000);  // Give all pods time to start up
+
+        OpenShiftClient client = new DefaultOpenShiftClient();
+        List<Pod> pods = client.pods()
+                .inNamespace(client.getNamespace())
+                .withLabel("app=" + APPLICATION_NAME)
+                .list()
+                .getItems();
+
+        assertNotNull("Expected at least one pod", pods);
+        assertTrue("Expected at least one pod", pods.size() > 0);
+
+        logger.info("Waiting for " + pods.size() + " pod(s) to finish");
+        CountDownLatch podsCountDownLatch = new CountDownLatch(pods.size());
+        client.pods()
+                .inNamespace(client.getNamespace())
+                .withLabel("app=" + APPLICATION_NAME)
+                .watch(new PodWatcher(podsCountDownLatch));
+        podsCountDownLatch.await(DURATION_IN_MINUTES + 1, TimeUnit.MINUTES);      // set timeout to DURATION + 1?
+
+        Integer expectedTraceCount = 0;
+        for (Pod pod : pods) {
+            String targetPodName = pod.getMetadata().getName();
+            Integer traceCount = getTraceCountForPod(client, targetPodName);
+            expectedTraceCount += traceCount;
+        }
+        return expectedTraceCount;
+    }
+
+
+    /**
+     *
+     *
+     * @param client An OpenShiftClient
+     * @param podName Name of the pod whose log we want to search
+     * @return number of traces created in this pod
+     */
+    private Integer getTraceCountForPod(OpenShiftClient client, String podName) {
+        String log  = client.pods()
+                .inNamespace(client.getNamespace())
+                .withName(podName)
+                .inContainer(APPLICATION_NAME)
+                .tailingLines(3)
+                .getLog();
+
+        int startOfCount = log.indexOf(TRACES_CREATED_MESSAGE) + TRACES_CREATED_MESSAGE.length();
+        int endOfCount = log.indexOf("\n", startOfCount);
+        String countString = log.substring(startOfCount, endOfCount);
+        Integer tracesWrittenCount = Integer.valueOf(countString);
+
+        return tracesWrittenCount;
     }
 
 
@@ -183,40 +260,6 @@ public class ValidateTracesTest {
         int totalTraceCount = consumer.getRowCount();
 
         return totalTraceCount;
-    }
-
-    class WriteTraces implements Callable<Integer> {
-        Tracer tracer;
-        int id;
-        int durationInMinutes;
-
-        public WriteTraces(Tracer tracer, int durationInMinutes, int id) {
-            this.tracer = tracer;
-            this.durationInMinutes = durationInMinutes;
-            this.id = id;
-        }
-
-        @Override
-        public Integer call() throws Exception {
-            int  spanCount = 0;
-            String s = "Thread " + id;
-            logger.debug("Starting " + s);
-
-            Instant finish = Instant.now().plus(durationInMinutes, ChronoUnit.MINUTES);
-            while (Instant.now().isBefore(finish)) {
-                Span span = tracer.buildSpan(s).start();
-                try {
-                    span.setTag("iteration", spanCount);
-                    spanCount++;
-                    Thread.sleep(DELAY);
-                } catch (InterruptedException e) {
-                    logger.warn("Got interrupted exception", 3);
-                }
-                span.finish();
-            }
-
-            return spanCount;
-        }
     }
 
 
