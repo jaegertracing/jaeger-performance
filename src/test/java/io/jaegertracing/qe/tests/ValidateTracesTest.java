@@ -48,13 +48,49 @@ public class ValidateTracesTest {
     private static final String ELASTICSEARCH_HOST = envs.getOrDefault("ELASTICSEARCH_HOST", "elasticsearch");
     private static final Integer ELASTICSEARCH_PORT = new Integer(envs.getOrDefault("ELASTICSEARCH_PORT", "9200"));
     private static final String SPAN_STORAGE_TYPE = envs.getOrDefault("SPAN_STORAGE_TYPE", "cassandra");
+    private static final Boolean RUNNING_IN_OPENSHIFT = Boolean.valueOf(envs.getOrDefault("RUNNING_IN_OPENSHIFT", "true"));
 
     private static final Logger logger = LoggerFactory.getLogger(ValidateTracesTest.class.getName());
     private NumberFormat numberFormat = NumberFormat.getInstance();
 
     @Test
     public void countTraces() throws Exception {
-        // TODO 1. Refactor; 2. Can I add a route to elasticsearch or cassandra so this will work outside of OpenShift?
+        Integer expectedTraceCount = 0;
+        if (RUNNING_IN_OPENSHIFT) {
+            expectedTraceCount = getExpectedTraceCountFromPods();
+        } else {
+            expectedTraceCount = Integer.valueOf(System.getProperty("expectedTraceCount"));
+        }
+        logger.info("EXPECTED_TRACE_COUNT " + numberFormat.format(expectedTraceCount));
+
+        Instant startTime = Instant.now();
+        int actualTraceCount = 0;
+        if (SPAN_STORAGE_TYPE.equalsIgnoreCase("cassandra")) {
+            logger.info("Validating Cassandra Traces");
+            actualTraceCount = validateCassandraTraces(expectedTraceCount);
+        } else  {
+            logger.info("Validating ES Traces");
+            actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
+        }
+
+        Instant countEndTime = Instant.now();
+        long countDuration = Duration.between(startTime, countEndTime).toMillis();
+        logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
+        assertEquals("Did not find expected number of traces", expectedTraceCount.intValue(), actualTraceCount);
+    }
+
+    /**
+     * This method uses the fabric8 openshift client to:
+     * -- Find out how many pods are running the test application
+     * -- Setting up watchers to wait until they finish their work
+     * -- Getting the number of traces created from their logs
+     *
+     * The last part is a bit hacky but is the best solution I could come up with for the moment
+     *
+     * @return The number of traces created by all pods
+     * @throws InterruptedException only if sleeps are interrupted
+     */
+    private Integer getExpectedTraceCountFromPods() throws InterruptedException {
         Thread.sleep(30 * 1000);  // Give all pods time to start up
 
         OpenShiftClient client = new DefaultOpenShiftClient();
@@ -81,22 +117,7 @@ public class ValidateTracesTest {
             Integer traceCount = getTraceCountForPod(client, targetPodName);
             expectedTraceCount += traceCount;
         }
-        logger.info("EXPECTED_TRACE_COUNT " + numberFormat.format(expectedTraceCount));
-
-        Instant startTime = Instant.now();
-        int actualTraceCount = 0;
-        if (SPAN_STORAGE_TYPE.equalsIgnoreCase("cassandra")) {
-            logger.info("Validating Cassandra Traces");
-            actualTraceCount = validateCassandraTraces(expectedTraceCount);
-        } else  {
-            logger.info("Validating ES Traces");
-            actualTraceCount = validateElasticSearchTraces(expectedTraceCount);
-        }
-
-        Instant countEndTime = Instant.now();
-        long countDuration = Duration.between(startTime, countEndTime).toMillis();
-        logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
-        assertEquals("Did not find expected number of traces", expectedTraceCount.intValue(), actualTraceCount);
+        return expectedTraceCount;
     }
 
 
