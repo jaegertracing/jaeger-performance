@@ -22,6 +22,7 @@ pipeline {
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
+        string(name: 'WORKER_PODS', defaultValue: '1', description: 'The number of pods to run client threads in')
         string(name: 'DELAY', defaultValue: '100', description: 'delay in milliseconds between each span creation')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
@@ -115,7 +116,7 @@ pipeline {
                 withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
                     sh 'git status'
                     sh 'mvn -Dtest=false -DfailIfNoTests=false -DskipITs clean install'
-                    sh 'mvn --activate-profiles openshift -Dtest=false -DfailIfNoTests=false clean install fabric8:deploy -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}'
+                    sh 'mvn --activate-profiles openshift -Dtest=false -DfailIfNoTests=false clean install fabric8:deploy -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}'
                     sh 'mvn clean test'
                 }
 

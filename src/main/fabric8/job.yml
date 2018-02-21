@@ -1,9 +1,11 @@
 spec:
+  parallelism: ${pod.count}
+  completions: ${pod.count}
   template:
     spec:
       restartPolicy: Never
       containers:
-      - name: jaeger-standalone-performance-tests
+      - name: ${project.artifactId}
       - name: jaeger-agent
         image: jaegertracing/jaeger-agent
         ports:
