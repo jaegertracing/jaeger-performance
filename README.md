@@ -62,6 +62,7 @@ Start by downloading and building Jaeger based on the instructions under **Runni
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
 + Optional: `export CASSANDRA_CLUSTER_IP=localhost` or wherever cassandra is running, default is cassandra
++ Optional: `export RUNNING_IN_OPENSHIFT=false` if not on OpenShift
 + `mvn exec:java`
 + `mvn clean -DexpectedTraceCount=nnnnnn test`  where nnnnnn is the trace count output by the previous step
 
@@ -91,6 +92,7 @@ Note that the `-es.` arguments are optional but may be needed for long running t
 ### Checkout and run the tests
 + Clone this repo (`git@github.com:Hawkular-QE/SimpleJaegerExample.git`) and cd into it.
 + Optional: `export USE_AGENT_OR_COLLECTOR=agent` if you want to test using the agent
++ Optional: `export RUNNING_IN_OPENSHIFT=false` if not on OpenShift
 + `export SPAN_STORAGE_TYPE=elasticsearch`
 + `export ELASTICSEARCH_HOST=localhost` or wherever elasticsearch is running, default is elasticsearch
 + `mvn exec:java`
