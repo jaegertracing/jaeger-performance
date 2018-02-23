@@ -34,7 +34,7 @@ pipeline {
         stage('Set name and description') {
             steps {
                 script {
-                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.THREAD_COUNT + " X " + params.DURATION_IN_MINUTES + " min " + params.JAEGER_SAMPLING_RATE
+                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.WORKER_PODS + " pods " + " " + params.THREAD_COUNT + " threads " + params.DURATION_IN_MINUTES + " min " + params.JAEGER_SAMPLING_RATE
                     currentBuild.description = currentBuild.displayName
                 }
             }
