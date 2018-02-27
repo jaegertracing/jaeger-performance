@@ -170,6 +170,37 @@
                 </plugins>
             </build>
         </profile>
+        <profile>
+            <id>validate</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <artifactId>maven-failsafe-plugin</artifactId>
+                        <version>${maven.failsafe.plugin.version}</version>
+                        <executions>
+                            <execution>
+                                <id>run-integration-tests</id>
+                                <goals>
+                                    <goal>integration-test</goal>
+                                </goals>
+                                <configuration>
+                                    <includes>
+                                        <include>**/*Test.java</include>
+                                    </includes>
+                                </configuration>
+                            </execution>
+                            <execution>
+                                <id>verify</id>
+                                <goals>
+                                    <goal>verify</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+
+        </profile>
     </profiles>
 
 </project>

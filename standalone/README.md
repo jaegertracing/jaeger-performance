@@ -64,7 +64,7 @@ Start by downloading and building Jaeger based on the instructions under **Runni
 + Optional: `export CASSANDRA_CLUSTER_IP=localhost` or wherever cassandra is running, default is cassandra
 + Optional: `export RUNNING_IN_OPENSHIFT=false` if not on OpenShift
 + `mvn exec:java`
-+ `mvn clean -DexpectedTraceCount=nnnnnn test`  where nnnnnn is the trace count output by the previous step
++ `mvn -Pvalidate clean -DexpectedTraceCount=nnnnnn verify`  where nnnnnn is the trace count output by the previous step
 
 ### To empty the traces keyspace between runs
 `cqlsh --keyspace=jaeger_v1_test --execute="truncate traces;"`
@@ -96,7 +96,7 @@ Note that the `-es.` arguments are optional but may be needed for long running t
 + `export SPAN_STORAGE_TYPE=elasticsearch`
 + `export ELASTICSEARCH_HOST=localhost` or wherever elasticsearch is running, default is elasticsearch
 + `mvn exec:java`
-+ `mvn clean -DexpectedTraceCount=nnnnnn test`  where nnnnnn is the trace count output by the previous step
++ `mvn -Pvalidate clean -DexpectedTraceCount=nnnnnn verify`  where nnnnnn is the trace count output by the previous step
 
 ### To empty the traces table between runs
 + `curl -X DELETE localhost:9200/jaeger-*`
