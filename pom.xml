@@ -14,7 +14,6 @@
         <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
         <checkstyle.version>8.8</checkstyle.version>
         <elasticsearch.version>5.6.6</elasticsearch.version>
-        <!--exec-maven-plugin.version>1.6.0</exec-maven-plugin.version-->
         <fabric8.kubernetes.client.version>3.1.8</fabric8.kubernetes.client.version>
         <fabric8.kubernetes.model.version>2.0.8</fabric8.kubernetes.model.version>
         <fabric8-maven-plugin.version>3.5.35</fabric8-maven-plugin.version>
@@ -32,23 +31,6 @@
         <maven.versions.plugin.version>2.5</maven.versions.plugin.version>
         <okhttp3.version>3.9.0</okhttp3.version>
         <slf4j.version>1.7.25</slf4j.version>
-
-        <!-- Default parameter values for deploying to OpenShift -->
-        <!--delay>10</delay>
-        <duration.in.minutes>1</duration.in.minutes>
-        <jaeger.agent.host>localhost</jaeger.agent.host>
-        <jaeger.collector.host>jaeger-collector</jaeger.collector.host>
-        <jaeger.collector.port>14268</jaeger.collector.port>
-        <jaeger.flush.interval>100</jaeger.flush.interval>
-        <jaeger.max.packet.size>0</jaeger.max.packet.size>
-        <jaeger.max.queue.size>100000</jaeger.max.queue.size>
-        <jaeger.sampling.rate>1.0</jaeger.sampling.rate>
-        <jaeger.udp.port>6831</jaeger.udp.port>
-        <pod.count>1</pod.count>
-        <test.service.name>standalong</test.service.name>
-        <thread.count>100</thread.count>
-        <use.agent.or.collector>COLLECTOR</use.agent.or.collector>
-        <use.logging.reporter>false</use.logging.reporter-->
     </properties>
 
     <dependencyManagement>
@@ -180,74 +162,8 @@
                     </execution>
                 </executions>
             </plugin>
-            <!--plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>${exec-maven-plugin.version}</version>
-                <executions>
-                    <execution>
-                        <goals>
-                            <goal>java</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <mainClass>io.jaegertracing.qe.CreateTraces</mainClass>
-                    <cleanupDaemonThreads>false</cleanupDaemonThreads>
-                </configuration>
-            </plugin-->
         </plugins>
     </build>
-
-    <!--profiles>
-        <profile>
-            <id>openshift</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>io.fabric8</groupId>
-                        <artifactId>fabric8-maven-plugin</artifactId>
-                        <version>${fabric8-maven-plugin.version}</version>
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>resource</goal>
-                                    <goal>build</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                        <configuration>
-                            <enricher>
-                                <config>
-                                    <fmp-controller>
-                                        <type>Job</type>
-                                    </fmp-controller>
-                                </config>
-                            </enricher>
-                            <resources>
-                                <env>
-                                    <DELAY>${delay}</DELAY>
-                                    <DURATION_IN_MINUTES>${duration.in.minutes}</DURATION_IN_MINUTES>
-                                    <JAEGER_AGENT_HOST>${jaeger.agent.host}</JAEGER_AGENT_HOST>
-                                    <JAEGER_COLLECTOR_HOST>${jaeger.collector.host}</JAEGER_COLLECTOR_HOST>
-                                    <JAEGER_COLLECTOR_PORT>${jaeger.collector.port}</JAEGER_COLLECTOR_PORT>
-                                    <JAEGER_FLUSH_INTERVAL>${jaeger.flush.interval}</JAEGER_FLUSH_INTERVAL>
-                                    <JAEGER_MAX_PACKET_SIZE>${jaeger.max.packet.size}</JAEGER_MAX_PACKET_SIZE>
-                                    <JAEGER_MAX_QUEUE_SIZE>${jaeger.max.queue.size}</JAEGER_MAX_QUEUE_SIZE>
-                                    <JAEGER_SAMPLING_RATE>${jaeger.sampling.rate}</JAEGER_SAMPLING_RATE>
-                                    <JAEGER_UDP_PORT>${jaeger.udp.port}</JAEGER_UDP_PORT>
-                                    <TEST_SERVICE_NAME>${test.service.name}</TEST_SERVICE_NAME>
-                                    <THREAD_COUNT>${thread.count}</THREAD_COUNT>
-                                    <USE_AGENT_OR_COLLECTOR>${use.agent.or.collector}</USE_AGENT_OR_COLLECTOR>
-                                    <USE_LOGGING_REPORTER>${use.logging.reporter}</USE_LOGGING_REPORTER>
-                                </env>
-                            </resources>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles-->
 
     <reporting>
         <plugins>
