@@ -1,4 +1,4 @@
 # Jaeger Performance Tests
 
-This project is for performance tests for **Jaeger** from https://jaeger.readthedocs.io/en/latest/getting_started/
+This project is for performance tests for **Jaeger** https://jaeger.readthedocs.io/en/latest/getting_started/
 
