@@ -87,7 +87,7 @@ pipeline {
             steps {
                 sh '''
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
-                    ./updateTemplateForCassandra.sh
+                    ./standalone/updateTemplateForCassandra.sh
                     oc process  ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
             }
@@ -99,7 +99,7 @@ pipeline {
             steps {
                 sh '''
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
-                    ./updateTemplateForElasticSearch.sh
+                    ./standalone/updateTemplateForElasticSearch.sh
                     oc process ${DEPLOYMENT_PARAMETERS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
             }
@@ -114,10 +114,13 @@ pipeline {
         stage('Run tests'){
             steps{
                 withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
-                    sh 'git status'
-                    sh 'mvn -Dtest=false -DfailIfNoTests=false -DskipITs clean install'
-                    sh 'mvn --activate-profiles openshift -Dtest=false -DfailIfNoTests=false clean install fabric8:deploy -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}'
-                    sh 'mvn clean test'
+                    sh '''
+                        git status
+                        cd standalone
+                        mvn -Dtest=false -DfailIfNoTests=false -DskipITs clean install
+                        mvn --activate-profiles openshift -Dtest=false -DfailIfNoTests=false clean install fabric8:deploy -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
+                        mvn clean test
+                    '''
                 }
 
             }
