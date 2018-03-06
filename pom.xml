@@ -46,7 +46,7 @@
         <maven.license.plugin.verxion>3.0</maven.license.plugin.verxion>
         <maven.surefire.plugin.version>2.20.1</maven.surefire.plugin.version>
         <maven.versions.plugin.version>2.5</maven.versions.plugin.version>
-        <okhttp3.version>3.9.0</okhttp3.version>
+        <okhttp3.version>3.10.0</okhttp3.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <rootProject.basedir>${project.basedir}</rootProject.basedir>
         <slf4j.version>1.7.25</slf4j.version>
