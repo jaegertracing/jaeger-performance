@@ -43,7 +43,7 @@ public class TraceWriter implements Callable<Integer> {
     @Override
     public Integer call() throws Exception {
         int  spanCount = 0;
-        String s = "Thread " + id;
+        String s = "Thread" + id;
         logger.debug("Starting " + s);
 
         Instant finish = Instant.now().plus(durationInMinutes, ChronoUnit.MINUTES);

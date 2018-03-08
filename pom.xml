@@ -149,6 +149,7 @@
                     <configuration>
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
+                        <showDeprecation>true</showDeprecation>
                     </configuration>
                 </plugin>
             </plugins>
