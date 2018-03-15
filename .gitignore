@@ -26,3 +26,6 @@ hs_err_pid*
 # IDEA stuff
 *.iml
 .idea
+
+# Generated code
+gen-java
