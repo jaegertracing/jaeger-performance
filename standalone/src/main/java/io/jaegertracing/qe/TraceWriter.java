@@ -19,6 +19,7 @@ import io.opentracing.Tracer;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Map;
+
 import java.util.concurrent.Callable;
 
 import org.slf4j.Logger;
@@ -32,25 +33,36 @@ public class TraceWriter implements Callable<Integer> {
     private static final Map<String, String> envs = System.getenv();
     private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
     private static final Logger logger = LoggerFactory.getLogger(TraceWriter.class);
-
+    private String podName;
 
     public TraceWriter(Tracer tracer, int durationInMinutes, int id) {
         this.tracer = tracer;
         this.durationInMinutes = durationInMinutes;
         this.id = id;
+
+        // If running on OpenShift add suffix of pod name as hostname
+        String host = System.getenv("HOSTNAME");
+        if (host != null) {
+            int lastDash = host.lastIndexOf("-") + 1;
+            podName = host.substring(lastDash);
+            logger.debug("HOSTNAME " + podName);
+        } else {
+            podName = "unknown-host";
+        }
     }
 
     @Override
     public Integer call() throws Exception {
-        int  spanCount = 0;
-        String s = "Thread" + id;
-        logger.debug("Starting " + s);
+        int spanCount = 0;
+        String operationName = "Thread" + id;
+        logger.debug("Starting " + operationName);
 
         Instant finish = Instant.now().plus(durationInMinutes, ChronoUnit.MINUTES);
         while (Instant.now().isBefore(finish)) {
-            Span span = tracer.buildSpan(s).start();
+            Span span = tracer.buildSpan(operationName).start();
             try {
                 span.setTag("iteration", spanCount);
+                span.setTag("podname", podName);
                 spanCount++;
                 Thread.sleep(DELAY);
             } catch (InterruptedException e) {
