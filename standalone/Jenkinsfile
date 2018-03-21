@@ -18,14 +18,14 @@ pipeline {
         choice(choices: 'COLLECTOR\nAGENT', name: 'USE_AGENT_OR_COLLECTOR')
         choice(choices: 'elasticsearch\ncassandra',  name: 'SPAN_STORAGE_TYPE')
         string(name: 'DURATION_IN_MINUTES', defaultValue: '5', description: 'Amount of time each worker should run')
-        string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
-        string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
-        string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
         string(name: 'WORKER_PODS', defaultValue: '1', description: 'The number of pods to run client threads in')
         string(name: 'DELAY', defaultValue: '100', description: 'delay in milliseconds between each span creation')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
+        string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
+        string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
+        string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
@@ -34,13 +34,14 @@ pipeline {
         stage('Set name and description') {
             steps {
                 script {
-                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.WORKER_PODS + " pods " + " " + params.THREAD_COUNT + " threads " + params.DURATION_IN_MINUTES + " min " + params.JAEGER_SAMPLING_RATE
+                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.WORKER_PODS + " workers " + params.COLLECTOR_PODS + " collectors " + params.THREAD_COUNT + " threads " + params.DURATION_IN_MINUTES + " min; delay " + params.DELAY
                     currentBuild.description = currentBuild.displayName
                 }
             }
         }
         stage('Delete Jaeger') {
             steps {
+                sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1 || true'
                 sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
                 sh 'env | sort'
             }
@@ -75,9 +76,18 @@ pipeline {
             }
             steps {
                 sh '''
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/elasticsearch.yml --output elasticsearch.yml
-                    oc create --filename elasticsearch.yml
+                    curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
+                    oc create -f es-cluster-deployment.yml
+                    while true; do
+                        replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}')
+                        ((replicas > 1)) && break
+                        sleep 1
+                     done
                 '''
+                sh 'oc env statefulset/elasticsearch NAMESPACE=${PROJECT_NAME} -n ${PROJECT_NAME}'
+                sh 'oc adm policy add-role-to-user view -z elasticsearch'
+                /* Restart to apply changes */
+                sh 'oc delete po -l app=elasticsearch'
             }
         }
         stage('deploy Jaeger with Cassandra') {
@@ -86,6 +96,8 @@ pipeline {
             }
             steps {
                 sh '''
+                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-cassandra.yml --output configmap-cassandra.yml
+                    sh 'oc create -f configmap-cassandra.yml'
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     ./standalone/updateTemplateForCassandra.sh
                     oc process  ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
@@ -98,7 +110,9 @@ pipeline {
             }
             steps {
                 sh '''
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
+                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
+                    oc create -f configmap-elasticsearch.yml
+                    curl https://raw.githubusercontent.com/kevinearls/jaeger-openshift/working/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     ./standalone/updateTemplateForElasticSearch.sh
                     oc process ${DEPLOYMENT_PARAMETERS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
@@ -131,6 +145,7 @@ pipeline {
             }
             steps {
                 script {
+                    sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1'
                     sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
                 }
             }
