@@ -93,6 +93,7 @@ public class ValidateTracesTest {
             expectedTraceCount = Integer.valueOf(System.getProperty("expectedTraceCount"));
         }
         logger.info("EXPECTED_TRACE_COUNT " + numberFormat.format(expectedTraceCount));
+        Files.write(Paths.get("tracesCreatedCount.txt"), Long.toString(expectedTraceCount).getBytes(), StandardOpenOption.CREATE);
 
         Instant startTime = Instant.now();
         int actualTraceCount = 0;
