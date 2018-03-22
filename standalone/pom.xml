@@ -210,7 +210,8 @@
                                     <includes>
                                         <include>**/*Test.java</include>
                                     </includes>
-                                    <runOrder>alphabetical</runOrder>
+                                    <!-- The ValidateTracesTest needs to run first -->
+                                    <runOrder>reversealphabetical</runOrder>
                                 </configuration>
                             </execution>
                             <execution>
