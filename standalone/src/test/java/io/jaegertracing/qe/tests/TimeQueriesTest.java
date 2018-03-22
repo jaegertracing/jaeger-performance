@@ -151,7 +151,7 @@ public class TimeQueriesTest {
     public void testGetWithOneTag() {
         int limit = 100; // TODO How to set this?  This should be number of THREADS x PODS if iteration number is lower than number of spans created by all threads.
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
-        queryParameters.put("tag", Arrays.asList("iteration:581"));       // TODO how to search on multiple tags?
+        queryParameters.put("tag", Arrays.asList("iteration:1"));       // TODO how to search on multiple tags?
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
@@ -172,10 +172,10 @@ public class TimeQueriesTest {
     // WHAT tags can I use to get a high number of threads?
     @Test
     public void testGetWithTwoTags() {
-        int limit = 100;        // TODO How to set this?
+        int limit = THREAD_COUNT;        // TODO How to set this?
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
         // TODO pick iteration at random
-        queryParameters.put("tag", Arrays.asList("iteration:581", "podname:" + workerPodsNames.get(random.nextInt(WORKER_PODS))));
+        queryParameters.put("tag", Arrays.asList("iteration:1", "podname:" + workerPodsNames.get(random.nextInt(WORKER_PODS))));
         System.out.println("QP " + queryParameters.size());
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
