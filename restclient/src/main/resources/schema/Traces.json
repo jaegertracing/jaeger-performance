@@ -5,18 +5,6 @@
       "spans": [
         {
           "traceID": "abc0",
-          "spanID": "abc0",
-          "operationName": "root-span",
-          "references": null,
-          "startTime": 1000,
-          "duration": 500,
-          "tags": null,
-          "logs": null,
-          "processID": "p1",
-          "warnings": null
-        },
-        {
-          "traceID": "abc0",
           "spanID": "123",
           "operationName": "span1",
           "references": [
@@ -29,21 +17,6 @@
           "startTime": 1000,
           "duration": 500,
           "tags": [
-            {
-              "key": "error",
-              "type": "bool",
-              "value": true
-            },
-            {
-              "key": "int64",
-              "type": "int64",
-              "value": 123
-            },
-            {
-              "key": "float64",
-              "type": "float64",
-              "value": 123.567
-            },
             {
               "key": "binary",
               "type": "binary",
@@ -62,24 +35,6 @@
               ]
             }
           ],
-          "processID": "p2",
-          "warnings": null
-        },
-        {
-          "traceID": "abc0",
-          "spanID": "567",
-          "operationName": "span2",
-          "references": [
-            {
-              "refType": "FOLLOWS_FROM",
-              "traceID": "abc0",
-              "spanID": "abc0"
-            }
-          ],
-          "startTime": 1000,
-          "duration": 500,
-          "tags": null,
-          "logs": null,
           "processID": "p2",
           "warnings": null
         }

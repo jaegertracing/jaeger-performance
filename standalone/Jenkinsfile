@@ -8,6 +8,8 @@ pipeline {
         JAEGER_AGENT_HOST = "localhost"
         JAEGER_COLLECTOR_HOST = "jaeger-collector"
         JAEGER_COLLECTOR_PORT = 14268
+        JAEGER_QUERY_HOST = "jaeger-query"
+        JAEGER_QUERY_SERVICE_PORT = 80
         ELASTICSEARCH_HOST = "elasticsearch"
         ELASTICSEARCH_PORT = "9200"
         CASSANDRA_CLUSTER_IP = "cassandra"
@@ -130,8 +132,8 @@ pipeline {
                 withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
                     sh '''
                         git status
-                        cd standalone
                         mvn clean install
+                        cd standalone
                         mvn --activate-profiles openshift clean install fabric8:deploy -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                         mvn --activate-profiles validate clean verify
                     '''
@@ -160,6 +162,16 @@ pipeline {
                 script {
                     sh 'oc get pods | grep Completed | awk {"print \\$1"} | xargs oc delete pod || true'
                 }
+            }
+        }
+    }
+
+    post{
+        always{
+            script{
+                env.TRACE_COUNT=readFile'standalone/tracesCreatedCount.txt'
+                env.TRACES_FOUND_COUNT=readFile'standalone/tracesFoundCount.txt'
+                currentBuild.description =" Traces create " + env.TRACE_COUNT + " Traces found " + env.TRACES_FOUND_COUNT
             }
         }
     }
