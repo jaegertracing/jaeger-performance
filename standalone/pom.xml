@@ -50,6 +50,7 @@
         <pod.count>1</pod.count>
         <test.service.name>standalone</test.service.name>
         <thread.count>100</thread.count>
+        <tracers.per.pod>1</tracers.per.pod>
         <use.agent.or.collector>COLLECTOR</use.agent.or.collector>
         <use.logging.reporter>false</use.logging.reporter>
     </properties>
@@ -184,6 +185,7 @@
                                     <JAEGER_UDP_PORT>${jaeger.udp.port}</JAEGER_UDP_PORT>
                                     <TEST_SERVICE_NAME>${test.service.name}</TEST_SERVICE_NAME>
                                     <THREAD_COUNT>${thread.count}</THREAD_COUNT>
+                                    <TRACERS_PER_POD>${tracers.per.pod}</TRACERS_PER_POD>
                                     <USE_AGENT_OR_COLLECTOR>${use.agent.or.collector}</USE_AGENT_OR_COLLECTOR>
                                     <USE_LOGGING_REPORTER>${use.logging.reporter}</USE_LOGGING_REPORTER>
                                 </env>
