@@ -48,7 +48,7 @@
         <jaeger.sampling.rate>1.0</jaeger.sampling.rate>
         <jaeger.udp.port>6831</jaeger.udp.port>
         <pod.count>1</pod.count>
-        <test.service.name>standalong</test.service.name>
+        <test.service.name>standalone</test.service.name>
         <thread.count>100</thread.count>
         <use.agent.or.collector>COLLECTOR</use.agent.or.collector>
         <use.logging.reporter>false</use.logging.reporter>
