@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  */
 public class TimeQueriesTest {
     private static final Map<String, String> envs = System.getenv();
-    private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalong");       // FIXME!!!!
+    private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
     private static final Integer WORKER_PODS = Integer.valueOf(envs.getOrDefault("WORKER_PODS", "1"));
     private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
 
@@ -83,6 +83,7 @@ public class TimeQueriesTest {
     @BeforeClass
     public static void initialize() {
         queryParameters = new LinkedHashMap<>();  // We want to maintain insertion order of keys
+        queryParameters.put("service", Arrays.asList(TEST_SERVICE_NAME));      // This needs to be first
         simpleRestClient = new SimpleRestClient();
         workerPodsNames = getWorkerPodsNames();
     }
@@ -119,14 +120,11 @@ public class TimeQueriesTest {
     }
 
     /*
-     * Something like: jaeger-query-myproject.192.168.64.35.nip.io/api/traces?service=standalong&operationName=Thread1&limit=1
-     * See comments above, it would be good to know the max number of threads and maximum spans created per
-     *
      *
      */
     @Test
     public void testGetWithOperationName() {
-        int limit = 1000;   // TODO find maximum?  no, use podcount
+        int limit = 100;   // TODO find maximum?
         String operationName = "Thread" + (random.nextInt(THREAD_COUNT) + 1);  // pick a random Thread
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
         queryParameters.put("operation", Arrays.asList(operationName));
@@ -145,8 +143,7 @@ public class TimeQueriesTest {
         // TODO other assertions?
     }
 
-    // jaeger-query-myproject.192.168.64.35.nip.io/api/traces?service=standalong&limit=1&tag=iteration:5810"
-    // FIXME why are spans mapped to an object????
+
     @Test
     public void testGetWithOneTag() {
         int limit = 100; // TODO How to set this?  This should be number of THREADS x PODS if iteration number is lower than number of spans created by all threads.
@@ -168,8 +165,7 @@ public class TimeQueriesTest {
         }
     }
 
-    // curl "jaeger-query-myproject.192.168.64.35.nip.io/api/traces?service=standalong&limit=31&tag=iteration:5810&tag=podname:qp9xj"
-    // WHAT tags can I use to get a high number of threads?
+
     @Test
     public void testGetWithTwoTags() {
         int limit = THREAD_COUNT;        // TODO How to set this?
