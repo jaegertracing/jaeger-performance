@@ -83,6 +83,9 @@ public class SimpleRestClient {
         int iterations = 0;
         List<Datum> traces = new ArrayList<>();
 
+        if (!parameters.containsKey("service")) {
+            parameters.put("service", Arrays.asList(SERVICE_NAME));
+        }
         if (!parameters.containsKey("limit")) {
             parameters.put("limit", Arrays.asList(String.valueOf(expectedTraceCount)));
         }
