@@ -59,13 +59,15 @@ public class CreateTraces {
     private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "6831"));
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
     private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
+    private static final Integer TRACERS_PER_POD = new Integer(envs.getOrDefault("TRACERS_PER_POD", "1"));
     private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "COLLECTOR");
     private static final String USE_LOGGING_REPORTER = envs.getOrDefault("USE_LOGGING_REPORTER", "false");
 
     public static final String TRACES_CREATED_MESSAGE = "TRACES_CREATED: ";
 
     private static final Logger logger = LoggerFactory.getLogger(CreateTraces.class);
-    private static Tracer tracer;
+    //private static Tracer tracer;
+    private static List<Tracer> tracers = new ArrayList<>();
 
     /**
      *
@@ -73,7 +75,7 @@ public class CreateTraces {
      *
      * @return The tracer
      */
-    private static Tracer jaegerTracer() {
+    private static Tracer createJaegerTracer() {
         Tracer tracer;
         Sender sender;
         CompositeReporter compositeReporter;
@@ -114,6 +116,15 @@ public class CreateTraces {
         return tracer;
     }
 
+    /**
+     * Create TRACERS_PER_POD tracers to be spread among all test threads.
+     */
+    private void createAllJaegerTracers() {
+        for (int i = 0; i < TRACERS_PER_POD; i++) {
+            tracers.add(createJaegerTracer());
+        }
+    }
+
 
     /**
      * Create THREAD_COUNT writer threads and run them for DURATION_IN_MINUTES to create threads.  At the end
@@ -130,6 +141,8 @@ public class CreateTraces {
         List<Future<Integer>> workers = new ArrayList<>();
 
         for (int i = 0; i < THREAD_COUNT; i++) {
+            Tracer tracer = tracers.get(i % TRACERS_PER_POD);
+            logger.debug("Using tracer "  + i % TRACERS_PER_POD + " " + tracer.hashCode());
             Callable<Integer> worker = new TraceWriter(tracer, DURATION_IN_MINUTES, i);
             Future<Integer> created = executor.submit(worker);
             workers.add(created);
@@ -151,14 +164,22 @@ public class CreateTraces {
         long duration = Duration.between(createStartTime, createEndTime).toMillis();
         logger.info("Finished all " + THREAD_COUNT + " threads; Created " + numberFormat.format(tracesCreated) + " traces" + " in " + duration + " milliseconds");
         
-        closeTracer();
+        closeAllTracers();
     }
 
+    /**
+     * Close all tracers when we're done.
+     */
+    private void closeAllTracers() {
+        for (Tracer tracer : tracers) {
+            closeTracer(tracer);
+        }
+    }
 
     /**
-     * Close the tracer when done to make sure all traces are flushed.
+     * Close the tracers when done to make sure all traces are flushed.
      */
-    private void closeTracer() {
+    private void closeTracer(Tracer tracer) {
         try {
             Thread.sleep(JAEGER_FLUSH_INTERVAL);
         } catch (InterruptedException e) {
@@ -170,7 +191,7 @@ public class CreateTraces {
 
     public static void main(String[] args) throws InterruptedException, ExecutionException,IOException {
         CreateTraces createTraces = new CreateTraces();
-        tracer = jaegerTracer();
+        createTraces.createAllJaegerTracers();
         createTraces.go();
     }
 }

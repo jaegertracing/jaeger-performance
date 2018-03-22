@@ -21,8 +21,9 @@ pipeline {
         choice(choices: 'elasticsearch\ncassandra',  name: 'SPAN_STORAGE_TYPE')
         string(name: 'DURATION_IN_MINUTES', defaultValue: '5', description: 'Amount of time each worker should run')
         string(name: 'THREAD_COUNT', defaultValue: '100', description: 'The number of client threads to run')
-        string(name: 'WORKER_PODS', defaultValue: '1', description: 'The number of pods to run client threads in')
         string(name: 'DELAY', defaultValue: '100', description: 'delay in milliseconds between each span creation')
+        string(name: 'WORKER_PODS', defaultValue: '1', description: 'The number of pods to run client threads in')
+        string(name: 'TRACERS_PER_POD', defaultValue: '1')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
         string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
@@ -36,7 +37,7 @@ pipeline {
         stage('Set name and description') {
             steps {
                 script {
-                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.WORKER_PODS + " workers " + params.COLLECTOR_PODS + " collectors " + params.THREAD_COUNT + " threads " + params.DURATION_IN_MINUTES + " min; delay " + params.DELAY
+                    currentBuild.displayName =params.SPAN_STORAGE_TYPE + " " + params.USE_AGENT_OR_COLLECTOR + " " + params.WORKER_PODS + " workers " + params.COLLECTOR_PODS + " collectors " + params.THREAD_COUNT + " threads " + params.DURATION_IN_MINUTES + " minutes; tracers/pod" + params.TRACERS_PER_POD + " delay " + params.DELAY
                     currentBuild.description = currentBuild.displayName
                 }
             }
@@ -134,7 +135,7 @@ pipeline {
                         git status
                         mvn clean install
                         cd standalone
-                        mvn --activate-profiles openshift clean install fabric8:deploy -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
+                        mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                         mvn --activate-profiles validate clean verify
                     '''
                 }
