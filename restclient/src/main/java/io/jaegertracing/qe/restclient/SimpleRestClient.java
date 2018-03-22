@@ -42,7 +42,7 @@ public class SimpleRestClient {
     private static final Integer JAEGER_FLUSH_INTERVAL = new Integer(evs.getOrDefault("JAEGER_FLUSH_INTERVAL", "1000"));
     private static final String JAEGER_QUERY_HOST = evs.getOrDefault("JAEGER_QUERY_HOST", "localhost");
     private static final Integer JAEGER_QUERY_SERVICE_PORT = new Integer(evs.getOrDefault("JAEGER_QUERY_SERVICE_PORT", "16686"));
-    private static final String SERVICE_NAME = evs.getOrDefault("SERVICE_NAME", "PR696");
+    private static final String TEST_SERVICE_NAME = evs.getOrDefault("TEST_SERVICE_NAME", "PR696");
 
     // Limit for the number of retries when getting traces
     private static final Integer RETRY_LIMIT = 10;
@@ -84,7 +84,7 @@ public class SimpleRestClient {
         List<Datum> traces = new ArrayList<>();
 
         if (!parameters.containsKey("service")) {
-            parameters.put("service", Arrays.asList(SERVICE_NAME));
+            parameters.put("service", Arrays.asList(TEST_SERVICE_NAME));
         }
         if (!parameters.containsKey("limit")) {
             parameters.put("limit", Arrays.asList(String.valueOf(expectedTraceCount)));
