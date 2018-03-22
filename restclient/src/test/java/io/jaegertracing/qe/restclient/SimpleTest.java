@@ -15,7 +15,8 @@ package io.jaegertracing.qe.restclient;
 
 import io.jaegertracing.qe.restclient.model.Datum;
 
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -27,8 +28,8 @@ public class SimpleTest {
     @Test
     public void simpleTest() {
         SimpleRestClient simpleRestClient = new SimpleRestClient();
-        Map<String, String> queryParameters = new HashMap<>();
-        queryParameters.put("limit", "1");
+        Map<String, List<String>> queryParameters = new LinkedHashMap<>();
+        queryParameters.put("limit", Arrays.asList("1"));
 
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, 1);
         System.out.println("Got " + traces.size() + " Traces ");
