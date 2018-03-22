@@ -174,8 +174,8 @@ public class TimeQueriesTest {
     public void testGetWithTwoTags() {
         int limit = 100;        // TODO How to set this?
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
-        queryParameters.put("tag", Arrays.asList("iteration:581", "podname:67ddz"));       // TODO how to search on multiple tags?
-        //queryParameters.put("tag", "podname:qp9xj");
+        // TODO pick iteration at random
+        queryParameters.put("tag", Arrays.asList("iteration:581", "podname:" + workerPodsNames.get(random.nextInt(WORKER_PODS))));
         System.out.println("QP " + queryParameters.size());
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
@@ -184,9 +184,7 @@ public class TimeQueriesTest {
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
-        //Arrays.asList("foo", "bar");    // TODO decide how to do query parameters
-
-        // FIXME check tags once we figure out the correct way to get them
+        // TODO add more validation
     }
 
 
@@ -208,12 +206,6 @@ public class TimeQueriesTest {
                 }
             }
         }
-        /*System.out.println("Found " + podNames.size() + " podNames");
-        for (String podName : podNames) {
-            System.out.println("\t" + podName);
-        }*/
         return new ArrayList<>(podNames);
     }
-
-
 }
