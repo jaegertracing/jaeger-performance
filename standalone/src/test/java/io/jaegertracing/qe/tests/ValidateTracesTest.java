@@ -28,14 +28,20 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.jaegertracing.qe.restclient.SimpleRestClient;
+import io.jaegertracing.qe.restclient.model.Datum;
 import io.jaegertracing.qe.tests.util.PodWatcher;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -47,10 +53,13 @@ import org.apache.http.HttpHost;
 import org.apache.http.util.EntityUtils;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
+import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ValidateTracesTest {
     private static final Map<String, String> envs = System.getenv();
 
@@ -66,8 +75,17 @@ public class ValidateTracesTest {
     private static final Logger logger = LoggerFactory.getLogger(ValidateTracesTest.class.getName());
     private NumberFormat numberFormat = NumberFormat.getInstance();
 
+
+    /**
+     * If running in OpenShift this test must be run first, as there can be a delay between the time spans are created
+     * and they are available in the back end.  When run on OpenShift this test must also be started when pods are still
+     * running so it can get trace counts out of the logs.
+     *
+     * @throws InterruptedException if interrupted  TODO add more info please.
+     * @throws IOException if there's an ioexception
+     */
     @Test
-    public void countTraces() throws Exception {
+    public void countTraces() throws InterruptedException, IOException {
         Integer expectedTraceCount = 0;
         if (RUNNING_IN_OPENSHIFT) {
             expectedTraceCount = getExpectedTraceCountFromPods();
@@ -89,6 +107,7 @@ public class ValidateTracesTest {
         Instant countEndTime = Instant.now();
         long countDuration = Duration.between(startTime, countEndTime).toMillis();
         logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
+        Files.write(Paths.get("tracesFoundCount.txt"), Long.toString(actualTraceCount).getBytes(), StandardOpenOption.CREATE);
         assertEquals("Did not find expected number of traces", expectedTraceCount.intValue(), actualTraceCount);
     }
 

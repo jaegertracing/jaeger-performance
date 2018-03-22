@@ -19,7 +19,8 @@ import io.jaegertracing.qe.restclient.model.Traces;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -49,18 +50,19 @@ public class SimpleRestClient {
     private ObjectMapper jsonObjectMapper = new ObjectMapper();
     private static final Logger logger = LoggerFactory.getLogger(SimpleRestClient.class.getName());
 
-    private List<Datum> getTraces(Map<String, String> parameters) {
+    private List<Datum> getTraces(Map<String, List<String>> parameters) {
         Client client = ResteasyClientBuilder.newBuilder()
                 .build();
         String targetUrl = "http://" + JAEGER_QUERY_HOST + ":" + JAEGER_QUERY_SERVICE_PORT + "/api/traces";
 
         WebTarget target = client.target(targetUrl);
-        target = target.queryParam("service", SERVICE_NAME);
         for (String key : parameters.keySet()) {
-            target = target.queryParam(key, parameters.get(key));
+            for (String value : parameters.get(key)) {
+                target = target.queryParam(key, value);
+            }
         }
-        logger.debug("GETTING TRACES: " + target.getUri());
 
+        logger.info("GETTING TRACES: " + target.getUri());
         Invocation.Builder builder = target.request();
         builder.accept(MediaType.APPLICATION_JSON);
         Traces traces = builder.get(Traces.class);
@@ -77,12 +79,12 @@ public class SimpleRestClient {
      * @param expectedTraceCount number of traces we expect; this will be used as the limit parameter
      * @return
      */
-    public List<Datum> getTraces(Map<String, String> parameters, int expectedTraceCount) {
+    public List<Datum> getTraces(Map<String, List<String>> parameters, int expectedTraceCount) {
         int iterations = 0;
         List<Datum> traces = new ArrayList<>();
 
         if (!parameters.containsKey("limit")) {
-            parameters.put("limit", "" + expectedTraceCount);
+            parameters.put("limit", Arrays.asList(String.valueOf(expectedTraceCount)));
         }
 
         // Retry for up to RETRY_LIMIT seconds to get the expected number of traces
@@ -114,8 +116,8 @@ public class SimpleRestClient {
      */
     public List<Datum> getTracesSinceStart(Instant start, int expectedTraceCount) {
         long startTime = TimeUnit.MILLISECONDS.toMicros(start.toEpochMilli());
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("start", String.valueOf(startTime));
+        Map<String, List<String>> parameters = new LinkedHashMap<>();
+        parameters.put("start", Arrays.asList(String.valueOf(startTime)));
 
         List<Datum> traces = getTraces(parameters, expectedTraceCount);
         return traces;
@@ -131,11 +133,34 @@ public class SimpleRestClient {
     public List<Datum> getTracesBetween(Instant start, Instant end, int expectedTraceCount) {
         long startTime = TimeUnit.MILLISECONDS.toMicros(start.toEpochMilli());
         long endTime = TimeUnit.MILLISECONDS.toMicros(end.toEpochMilli());
-        Map<String, String> parameters = new HashMap<>();
-        parameters.put("start", String.valueOf(startTime));
-        parameters.put("end", String.valueOf(endTime));
+        Map<String, List<String>> parameters = new LinkedHashMap<>();
+        parameters.put("start", Arrays.asList(String.valueOf(startTime)));
+        parameters.put("end", Arrays.asList(String.valueOf(endTime)));
 
         List<Datum> traces = getTraces(parameters, expectedTraceCount);
         return traces;
     }
+
+
+    /**
+     * Get a single trace by id
+     * @param traceId the traceID we're searching for
+     * @return A trace (Datum)
+     */
+    public Datum getTraceById(String traceId) {
+        Client client = ResteasyClientBuilder.newBuilder()
+                .build();
+        String targetUrl = "http://" + JAEGER_QUERY_HOST + ":" + JAEGER_QUERY_SERVICE_PORT + "/api/trace/" + traceId;
+
+        WebTarget target = client.target(targetUrl);
+        logger.debug("GETTING TRACE: " + target.getUri());
+
+        Invocation.Builder builder = target.request();
+        builder.accept(MediaType.APPLICATION_JSON);
+        Traces traces = builder.get(Traces.class);
+        client.close();
+
+        return traces.getData().get(0);
+    }
+
 }
