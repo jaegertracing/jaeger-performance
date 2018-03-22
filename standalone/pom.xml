@@ -44,16 +44,22 @@
         <jaeger.flush.interval>100</jaeger.flush.interval>
         <jaeger.max.packet.size>0</jaeger.max.packet.size>
         <jaeger.max.queue.size>100000</jaeger.max.queue.size>
+        <jaeger.performance.rest.client.version>1.2.0</jaeger.performance.rest.client.version>
         <jaeger.sampling.rate>1.0</jaeger.sampling.rate>
         <jaeger.udp.port>6831</jaeger.udp.port>
         <pod.count>1</pod.count>
-        <test.service.name>standalong</test.service.name>
+        <test.service.name>standalone</test.service.name>
         <thread.count>100</thread.count>
         <use.agent.or.collector>COLLECTOR</use.agent.or.collector>
         <use.logging.reporter>false</use.logging.reporter>
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>io.jaegertracing.qe</groupId>
+            <artifactId>jaeger-performance-rest-client</artifactId>
+            <version>${jaeger.performance.rest.client.version}</version>
+        </dependency>
         <dependency>
             <groupId>com.uber.jaeger</groupId>
             <artifactId>jaeger-core</artifactId>
@@ -204,6 +210,8 @@
                                     <includes>
                                         <include>**/*Test.java</include>
                                     </includes>
+                                    <!-- The ValidateTracesTest needs to run first -->
+                                    <runOrder>reversealphabetical</runOrder>
                                 </configuration>
                             </execution>
                             <execution>

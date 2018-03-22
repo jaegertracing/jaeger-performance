@@ -18,6 +18,10 @@ they need to be wrapped as shown below:
  
  Note that on account of traces being returned as an array of `data`, the class generated for them is called `Datum`.  Obviously
  `Trace` would be better, but I'm not sure how to make the plugin do this.
- 
+`jsonschema2pojo`
+**NOTE** I've had to remove some of the example `tag` elements from Traces.json in order to get `jsonschema2pojo` to 
+generate code where `Span` returned a `List<Tag>` instead of an `Object`.  This will require further investigation.
+
+
  
  
