@@ -1,5 +1,9 @@
 pipeline {
     agent any
+    tools {
+        maven 'maven-3.5.3'
+        jdk 'jdk8'
+    }
     options {
         disableConcurrentBuilds()
         /*timeout(time: 8, unit: 'HOURS')*/
@@ -130,16 +134,13 @@ pipeline {
         /* For Agent we need to deploy */
         stage('Run tests'){
             steps{
-                withEnv(["JAVA_HOME=${ tool 'jdk8' }", "PATH+MAVEN=${tool 'maven-3.5.2'}/bin:${env.JAVA_HOME}/bin"]) {
-                    sh '''
-                        git status
-                        mvn clean install
-                        cd standalone
-                        mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
-                        mvn --activate-profiles validate clean verify
-                    '''
-                }
-
+                sh '''
+                    git status
+                    mvn clean install
+                    cd standalone
+                    mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
+                    mvn --activate-profiles validate clean verify
+                '''
             }
         }
         stage('Delete Jaeger at end') {
