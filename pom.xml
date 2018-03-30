@@ -28,13 +28,13 @@
         <cassandra.driver.core.version>3.4.0</cassandra.driver.core.version>
         <checkstyle.version>8.8</checkstyle.version>
         <elasticsearch.version>5.6.6</elasticsearch.version>
-        <fabric8.kubernetes.client.version>3.1.8</fabric8.kubernetes.client.version>
+        <fabric8.kubernetes.client.version>3.1.10</fabric8.kubernetes.client.version>
         <fabric8.kubernetes.model.version>2.0.8</fabric8.kubernetes.model.version>
         <fabric8-maven-plugin.version>3.5.35</fabric8-maven-plugin.version>
-        <fabric8.openshift.client.version>3.1.8</fabric8.openshift.client.version>
+        <fabric8.openshift.client.version>3.1.10</fabric8.openshift.client.version>
         <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
-        <jackson.version>2.9.4</jackson.version>
-        <jaeger.version>0.25.0</jaeger.version>
+        <jackson.version>2.9.5</jackson.version>
+        <jaeger.version>0.26.0</jaeger.version>
         <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>
