@@ -119,7 +119,7 @@ pipeline {
                 sh '''
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
                     oc create -f configmap-elasticsearch.yml
-                    curl https://raw.githubusercontent.com/kevinearls/jaeger-openshift/working/production/jaeger-production-template.yml --output jaeger-production-template.yml
+                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     ./standalone/updateTemplateForElasticSearch.sh
                     oc process ${DEPLOYMENT_PARAMETERS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
