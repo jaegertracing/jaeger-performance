@@ -16,8 +16,6 @@ package io.jaegertracing.qe.tests;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.type.CollectionType;
 import io.jaegertracing.qe.restclient.SimpleRestClient;
 import io.jaegertracing.qe.restclient.model.Datum;
 import io.jaegertracing.qe.restclient.model.Span;
@@ -35,9 +33,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.codehaus.jackson.type.TypeReference;
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
@@ -70,7 +68,7 @@ public class TimeQueriesTest {
     private static Map<String, List<String>> queryParameters;
     private static final Logger logger = LoggerFactory.getLogger(TimeQueriesTest.class.getName());
     private static Instant testStartTime;
-    private static List<String> workerPodsNames;
+    private static List<String> workerPodNames;
     private ThreadLocalRandom random = ThreadLocalRandom.current();
 
     @Rule
@@ -85,7 +83,7 @@ public class TimeQueriesTest {
         queryParameters = new LinkedHashMap<>();  // We want to maintain insertion order of keys
         queryParameters.put("service", Arrays.asList(TEST_SERVICE_NAME));      // This needs to be first
         simpleRestClient = new SimpleRestClient();
-        workerPodsNames = getWorkerPodsNames();
+        workerPodNames = getWorkerPodNames();
     }
 
     @Before
@@ -165,18 +163,18 @@ public class TimeQueriesTest {
         }
     }
 
-
+    @Ignore
     @Test
     public void testGetWithTwoTags() {
         int limit = THREAD_COUNT;        // TODO How to set this?
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
-        // TODO pick iteration at random
-        queryParameters.put("tag", Arrays.asList("iteration:1", "podname:" + workerPodsNames.get(random.nextInt(WORKER_PODS))));
-        System.out.println("QP " + queryParameters.size());
+        // TODO pick iteration and pod at random
+        queryParameters.put("tag", Arrays.asList("iteration:1", "podname:" + workerPodNames.get(0)));
+        logger.info("Query parameters: " + queryParameters.size());
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + limit + " spans by one tag took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + limit + " spans with two  took " + numberFormat.format(duration) + " milliseconds");
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -184,11 +182,12 @@ public class TimeQueriesTest {
     }
 
 
-    private static List<String> getWorkerPodsNames() {
+    private static List<String> getWorkerPodNames() {
         int limit = WORKER_PODS; // We know pod count, set this to that
         String operationName = "Thread1";
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
-        queryParameters.put("operation", Arrays.asList(operationName));
+        // FIXME restore this after figuring out what's going on with the rest API
+        //queryParameters.put("operation", Arrays.asList(operationName));
         queryParameters.put("tag", Arrays.asList("iteration:1"));
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
 
@@ -202,6 +201,8 @@ public class TimeQueriesTest {
                 }
             }
         }
+
+        logger.info("Found " + podNames.size() + " pod names in " + traces.size() + " traces");
         return new ArrayList<>(podNames);
     }
 }
