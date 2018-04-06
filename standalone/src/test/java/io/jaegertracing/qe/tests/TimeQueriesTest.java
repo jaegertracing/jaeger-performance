@@ -123,7 +123,7 @@ public class TimeQueriesTest {
     @Test
     public void testGetWithOperationName() {
         int limit = 100;   // TODO find maximum?
-        String operationName = "Thread" + (random.nextInt(THREAD_COUNT) + 1);  // pick a random Thread
+        String operationName = "Thread" + (random.nextInt(THREAD_COUNT));  // pick a random Thread
         queryParameters.put("limit", Arrays.asList(String.valueOf(limit)));
         queryParameters.put("operation", Arrays.asList(operationName));
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
