@@ -34,7 +34,7 @@
         <fabric8.openshift.client.version>3.1.10</fabric8.openshift.client.version>
         <glassfish.jersey.client.version>2.26</glassfish.jersey.client.version>
         <jackson.version>2.9.5</jackson.version>
-        <jaeger.version>0.26.0</jaeger.version>
+        <jaeger.version>0.27.0-RC1</jaeger.version>
         <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>
@@ -57,7 +57,7 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.uber.jaeger</groupId>
+                <groupId>io.jaegertracing</groupId>
                 <artifactId>jaeger-core</artifactId>
                 <version>${jaeger.version}</version>
             </dependency>

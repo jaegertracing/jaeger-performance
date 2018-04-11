@@ -62,7 +62,7 @@
             <version>${jaeger.performance.rest.client.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.uber.jaeger</groupId>
+            <groupId>io.jaegertracing</groupId>
             <artifactId>jaeger-core</artifactId>
         </dependency>
         <dependency>
