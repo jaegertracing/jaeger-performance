@@ -84,7 +84,7 @@ pipeline {
             steps {
                 sh '''
                     curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
-                    sed -i 's/512Mi/2Gi/g' es-cluster-deployment.yml
+
                     oc create -f es-cluster-deployment.yml
                     while true; do
                         replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}')
