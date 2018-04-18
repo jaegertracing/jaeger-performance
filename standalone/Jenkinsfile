@@ -84,7 +84,7 @@ pipeline {
             steps {
                 sh '''
                     curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
-
+                    sed -i 's/512Mi/2Gi/g' es-cluster-deployment.yml
                     oc create -f es-cluster-deployment.yml
                     while true; do
                         replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}')
@@ -137,7 +137,7 @@ pipeline {
                     mvn clean install
                     cd standalone
                     mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
-                    mvn --activate-profiles validate clean verify
+                    mvn --activate-profiles validate -Dfailsafe.rerunFailingTestsCount=2 clean verify
                 '''
             }
         }
