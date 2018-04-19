@@ -2,7 +2,7 @@ pipeline {
     agent any
     tools {
         maven 'maven-3.5.3'
-        jdk 'jdk8'
+        jdk 'jdk9'
     }
     options {
         disableConcurrentBuilds()
