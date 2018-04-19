@@ -158,10 +158,17 @@
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${maven.compiler.plugin.version}</version>
                     <configuration>
+                        <release>9</release>
+                        <compilerArgs>
+                            <arg>--add-modules</arg>
+                            <arg>java.xml.ws.annotation</arg>
+                        </compilerArgs>
+                    </configuration>
+                    <!--configuration>
                         <source>${maven.compiler.source}</source>
                         <target>${maven.compiler.target}</target>
                         <showDeprecation>true</showDeprecation>
-                    </configuration>
+                    </configuration-->
                 </plugin>
             </plugins>
         </pluginManagement>
