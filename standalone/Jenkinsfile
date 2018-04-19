@@ -134,7 +134,8 @@ pipeline {
             steps{
                 sh '''
                     git status
-                    mvn clean install
+                    mvn --show-version clean install
+                    mvn dependency:tree | grep opentracing-api
                     cd standalone
                     mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                     mvn --activate-profiles validate -Dfailsafe.rerunFailingTestsCount=2 clean verify
