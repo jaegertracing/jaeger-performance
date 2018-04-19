@@ -148,6 +148,7 @@ public class ValidateTracesTest {
         for (Pod pod : pods) {
             String targetPodName = pod.getMetadata().getName();
             Integer traceCount = getTraceCountForPod(client, targetPodName);
+            logger.info("Got " + numberFormat.format(traceCount) + " traces from pod " + targetPodName);
             expectedTraceCount += traceCount;
         }
         return expectedTraceCount;
