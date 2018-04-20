@@ -22,7 +22,7 @@ spec:
   tags:
     - from:
         kind: DockerImage
-        name: 'jaegertracing/jaeger-agent:latest'
+        name: ${jaeger.agent.image}
       name: latest
       referencePolicy:
         type: Source

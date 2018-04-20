@@ -39,6 +39,7 @@
         <delay>10</delay>
         <duration.in.minutes>1</duration.in.minutes>
         <jaeger.agent.host>localhost</jaeger.agent.host>
+        <jaeger.agent.image>jaegertracing/jaeger-agent:latest</jaeger.agent.image>
         <jaeger.collector.host>jaeger-collector</jaeger.collector.host>
         <jaeger.collector.port>14268</jaeger.collector.port>
         <jaeger.flush.interval>100</jaeger.flush.interval>

@@ -10,6 +10,7 @@ pipeline {
     }
     environment {
         JAEGER_AGENT_HOST = "localhost"
+        JAEGER_AGENT_IMAGE = 'jaegertracing/jaeger-agent:latest'
         JAEGER_COLLECTOR_HOST = "jaeger-collector"
         JAEGER_COLLECTOR_PORT = 14268
         JAEGER_QUERY_HOST = "jaeger-query"
@@ -30,6 +31,7 @@ pipeline {
         string(name: 'TRACERS_PER_POD', defaultValue: '1')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
+        string(name: 'ES_MEMORY', defaultValue: '512Mi', description: 'Memory for each elasticsearch pod')
         string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
@@ -84,7 +86,7 @@ pipeline {
             steps {
                 sh '''
                     curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
-                    sed -i 's/512Mi/2Gi/g' es-cluster-deployment.yml
+                    sed -i 's/512Mi/${ES_MEMORY}/g' es-cluster-deployment.yml
                     oc create -f es-cluster-deployment.yml
                     while true; do
                         replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}')
@@ -136,7 +138,7 @@ pipeline {
                     git status
                     mvn clean install
                     cd standalone
-                    mvn --activate-profiles openshift clean install fabric8:deploy -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
+                    mvn --activate-profiles openshift clean install fabric8:deploy -Djaeger.agent.image=${JAEGER_AGENT_IMAGE} -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                     mvn --activate-profiles validate -Dfailsafe.rerunFailingTestsCount=2 clean verify
                 '''
             }
