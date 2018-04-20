@@ -10,7 +10,6 @@ pipeline {
     }
     environment {
         JAEGER_AGENT_HOST = "localhost"
-        JAEGER_AGENT_IMAGE = 'jaegertracing/jaeger-agent:latest'
         JAEGER_COLLECTOR_HOST = "jaeger-collector"
         JAEGER_COLLECTOR_PORT = 14268
         JAEGER_QUERY_HOST = "jaeger-query"
@@ -38,6 +37,7 @@ pipeline {
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Image to use for agent')
     }
     stages {
         stage('Set name and description') {
