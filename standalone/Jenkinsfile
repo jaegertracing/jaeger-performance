@@ -37,7 +37,9 @@ pipeline {
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Image to use for agent')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Agent Image')
+        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing\\/jaeger-collector:latest', description: 'Collector image')
+        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing\\/jaeger-query:latest', description: 'Query image')
     }
     stages {
         stage('Set name and description') {
@@ -61,7 +63,6 @@ pipeline {
             }
         }
         stage('Cleanup, checkout, build') {
-        /* FIXME restore checkout scm */
             steps {
                 deleteDir()
                 checkout scm
@@ -106,6 +107,9 @@ pipeline {
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-cassandra.yml --output configmap-cassandra.yml
                     oc create -f ./configmap-cassandra.yml
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
+                    sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
+                    sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
+                    grep "image:" jaeger-production-template.yml
                     ./standalone/updateTemplateForCassandra.sh
                     oc process  ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
