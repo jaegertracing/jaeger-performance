@@ -21,7 +21,7 @@ spec:
       containers:
       - name: ${project.artifactId}
       - name: jaeger-agent
-        image: jaegertracing/jaeger-agent
+        image: brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-agent:1.4.1
         ports:
         - containerPort: 5775
           protocol: UDP
