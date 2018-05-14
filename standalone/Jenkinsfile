@@ -18,7 +18,7 @@ pipeline {
         ELASTICSEARCH_PORT = "9200"
         CASSANDRA_CLUSTER_IP = "cassandra"
         CASSANDRA_KEYSPACE_NAME="jaeger_v1_dc1"
-        DEPLOYMENT_PARAMETERS="-pIMAGE_VERSION=latest -pCOLLECTOR_QUEUE_SIZE=${COLLECTOR_QUEUE_SIZE} -pCOLLECTOR_PODS=${COLLECTOR_PODS}"
+         DEPLOYMENT_PARAMETERS="-pIMAGE_VERSION=latest -pCOLLECTOR_QUEUE_SIZE=${COLLECTOR_QUEUE_SIZE} -pCOLLECTOR_PODS=${COLLECTOR_PODS}"
     }
     parameters {
         choice(choices: 'COLLECTOR\nAGENT', name: 'USE_AGENT_OR_COLLECTOR')
@@ -124,6 +124,9 @@ pipeline {
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
                     oc create -f configmap-elasticsearch.yml
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
+                    sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
+                    sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
+                    grep "image:" jaeger-production-template.yml
                     ./standalone/updateTemplateForElasticSearch.sh
                     oc process ${DEPLOYMENT_PARAMETERS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
