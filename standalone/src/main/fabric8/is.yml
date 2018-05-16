@@ -22,7 +22,7 @@ spec:
   tags:
     - from:
         kind: DockerImage
-        name: brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/openshift3-istio-tech-preview/jaeger-agent:1.4.1
+        name: ${jaeger.agent.image}
       name: latest
       referencePolicy:
         type: Source
