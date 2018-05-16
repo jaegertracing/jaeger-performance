@@ -160,7 +160,6 @@ pipeline {
         stage('Run performance tests'){
             steps{
                 sh '''
-                    cd
                     pwd
                     git status
                     mvn clean install
