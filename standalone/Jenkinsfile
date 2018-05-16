@@ -126,6 +126,7 @@ pipeline {
                 sh '''
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
                     oc create -f configmap-elasticsearch.yml
+                    rm configmap-elasticsearch.yml
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
                     sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
