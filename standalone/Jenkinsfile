@@ -162,11 +162,11 @@ pipeline {
                 }
             }
         } */
-        stage('Delete Job at end') {
+        /*stage('Delete Job at end') {
             steps {
                 sh 'oc delete job jaeger-standalone-performance-tests || true'
             }
-        }
+        }*/
         stage('Cleanup pods') {
             steps {
                 script {
