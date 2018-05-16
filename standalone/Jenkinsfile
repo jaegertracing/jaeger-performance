@@ -142,23 +142,6 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
-        stage('smoke test with collector'){
-            when {
-                expression { params.RUN_SMOKE_TESTS  }
-            }
-            steps{
-                sh '''
-                    rm -rf jaeger-java-test
-                    git clone https://github.com/Hawkular-QE/jaeger-java-test.git
-                    cd jaeger-java-test
-
-                    export USE_COLLECTOR_OR_AGENT=collector
-                    mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
-                    cd ..
-                    rm -rf jaeger-java-test
-                '''
-            }
-        }
         stage('Run performance tests'){
             steps{
                 sh '''
@@ -180,6 +163,23 @@ pipeline {
                 '''
             }
         }
+        stage('smoke test with collector'){
+                    when {
+                        expression { params.RUN_SMOKE_TESTS  }
+                    }
+                    steps{
+                        sh '''
+                            rm -rf jaeger-java-test
+                            git clone https://github.com/Hawkular-QE/jaeger-java-test.git
+                            cd jaeger-java-test
+
+                            export USE_COLLECTOR_OR_AGENT=collector
+                            mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
+                            cd ..
+                            rm -rf jaeger-java-test
+                        '''
+                    }
+                }
         stage('Delete Jaeger at end') {
             when {
                 expression { params.DELETE_JAEGER_AT_END  }
