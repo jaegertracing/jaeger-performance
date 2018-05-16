@@ -154,6 +154,8 @@ pipeline {
 
                     export USE_COLLECTOR_OR_AGENT=collector
                     mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
+                    cd ..
+                    rm -rf jaeger-java-test
                 '''
             }
         }
