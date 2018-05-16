@@ -30,16 +30,19 @@ pipeline {
         string(name: 'TRACERS_PER_POD', defaultValue: '1')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
-        string(name: 'ES_MEMORY', defaultValue: '512Mi', description: 'Memory for each elasticsearch pod')
+        string(name: 'ES_MEMORY', defaultValue: '1Gi', description: 'Memory for each elasticsearch pod')
         string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
 
+        booleanParam(name: 'RUN_SMOKE_TESTS', defaultValue: false, description: 'Run smoke tests in addition to the performance tests')
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
+        booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
+
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Agent Image')
-        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing\\/jaeger-collector:latest', description: 'Collector image')
-        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing\\/jaeger-query:latest', description: 'Query image')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Agent Image NOTE: Do NOT quote backslashes')
+        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing\\/jaeger-collector:latest', description: 'Collector image NOTE: quote backslashes')
+        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing\\/jaeger-query:latest', description: 'Query image NOTE: quote backslashes')
     }
     stages {
         stage('Set name and description') {
@@ -123,6 +126,7 @@ pipeline {
                 sh '''
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
                     oc create -f configmap-elasticsearch.yml
+                    rm configmap-elasticsearch.yml
                     curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
                     sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
                     sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
@@ -138,10 +142,10 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
-        /* For Agent we need to deploy */
-        stage('Run tests'){
+        stage('Run performance tests'){
             steps{
                 sh '''
+                    pwd
                     git status
                     mvn clean install
                     cd standalone
@@ -150,6 +154,32 @@ pipeline {
                 '''
             }
         }
+        stage('Validate images') {
+            steps {
+                sh '''
+                    oc describe pod -l jaeger-infra=query-pod | grep "Image:"
+                    oc describe pod -l jaeger-infra=collector-pod | grep "Image:"
+                    oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
+                '''
+            }
+        }
+        stage('smoke test with collector'){
+                    when {
+                        expression { params.RUN_SMOKE_TESTS  }
+                    }
+                    steps{
+                        sh '''
+                            rm -rf jaeger-java-test
+                            git clone https://github.com/Hawkular-QE/jaeger-java-test.git
+                            cd jaeger-java-test
+
+                            export USE_COLLECTOR_OR_AGENT=collector
+                            mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
+                            cd ..
+                            rm -rf jaeger-java-test
+                        '''
+                    }
+                }
         stage('Delete Jaeger at end') {
             when {
                 expression { params.DELETE_JAEGER_AT_END  }
@@ -162,11 +192,14 @@ pipeline {
             }
         }
         stage('Delete Job at end') {
+            when {
+                expression { params.DELETE_JAEGER_AT_END  }
+            }
             steps {
                 sh 'oc delete job jaeger-standalone-performance-tests || true'
             }
         }
-        stage('Cleanup pods') {
+        stage('Cleanup build pods') {
             steps {
                 script {
                     sh 'oc get pods | grep Completed | awk {"print \\$1"} | xargs oc delete pod || true'
