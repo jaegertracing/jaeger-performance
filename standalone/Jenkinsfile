@@ -141,11 +141,13 @@ pipeline {
             }
         }
         stage('Validate images') {
-            sh '''
-                oc describe pod -l jaeger-infra=query-pod | grep "Image:"
-                oc describe pod -l job-name=jaeger-standalone-performance-tests | grep "Image:"
-                oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
-            '''
+            steps {
+                sh '''
+                    oc describe pod -l jaeger-infra=query-pod | grep "Image:"
+                    oc describe pod -l job-name=jaeger-standalone-performance-tests | grep "Image:"
+                    oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
+                '''
+            }
         }
         stage('Run tests'){
             steps{
