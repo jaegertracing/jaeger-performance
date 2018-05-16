@@ -152,11 +152,10 @@ pipeline {
                     cd jaeger-java-test
 
                     export USE_COLLECTOR_OR_AGENT=collector
-                    mvn clean test
+                    mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
                 '''
             }
         }
-
         stage('Run performance tests'){
             steps{
                 sh '''
