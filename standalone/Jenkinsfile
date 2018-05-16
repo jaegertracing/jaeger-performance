@@ -35,13 +35,14 @@ pipeline {
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
 
+        booleanParam(name: 'RUN_SMOKE_TESTS', defaultValue: true, description: 'Run smoke tests in addition to the performance tests')
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
 
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/openshift3-istio-tech-preview/jaeger-agent:1.4.1', description: 'Agent Image')
-        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-collector:1.4.1', description: 'Collector image')
-        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-query:1.4.1', description: 'Query image')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/openshift3-istio-tech-preview/jaeger-agent:1.4.1', description: 'Agent Image NOTE: Do NOT quote backslashes')
+        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-collector:1.4.1', description: 'Collector image NOTE: quote backslashes')
+        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-query:1.4.1', description: 'Query image NOTE: quote backslashes')
     }
     stages {
         stage('Set name and description') {
@@ -140,10 +141,27 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
-
-        stage('Run tests'){
+        stage('smoke test with collector'){
+            when {
+                expression { params.RUN_SMOKE_TESTS  }
+            }
             steps{
                 sh '''
+                    rm -rf jaeger-java-test
+                    git clone https://github.com/Hawkular-QE/jaeger-java-test.git
+                    cd jaeger-java-test
+
+                    export USE_COLLECTOR_OR_AGENT=collector
+                    mvn clean test
+                '''
+            }
+        }
+
+        stage('Run performance tests'){
+            steps{
+                sh '''
+                    cd
+                    pwd
                     git status
                     mvn clean install
                     cd standalone
