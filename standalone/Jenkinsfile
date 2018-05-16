@@ -140,15 +140,7 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
-        stage('Validate images') {
-            steps {
-                sh '''
-                    oc describe pod -l jaeger-infra=query-pod | grep "Image:"
-                    oc describe pod -l job-name=jaeger-standalone-performance-tests | grep "Image:"
-                    oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
-                '''
-            }
-        }
+
         stage('Run tests'){
             steps{
                 sh '''
@@ -160,7 +152,16 @@ pipeline {
                 '''
             }
         }
-       stage('Delete Jaeger at end') {
+        stage('Validate images') {
+            steps {
+                sh '''
+                    oc describe pod -l jaeger-infra=query-pod | grep "Image:"
+                    oc describe pod -l job-name=jaeger-standalone-performance-tests | grep "Image:"
+                    oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
+                '''
+            }
+        }
+        stage('Delete Jaeger at end') {
             when {
                 expression { params.DELETE_JAEGER_AT_END  }
             }
