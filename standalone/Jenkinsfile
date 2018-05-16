@@ -36,8 +36,9 @@ pipeline {
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
-        string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
+        booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
 
+        string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
         string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/openshift3-istio-tech-preview/jaeger-agent:1.4.1', description: 'Agent Image')
         string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-collector:1.4.1', description: 'Collector image')
         string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-query:1.4.1', description: 'Query image')
@@ -139,7 +140,13 @@ pipeline {
                 openshiftVerifyService apiURL: '', authToken: '', namespace: '', svcName: 'jaeger-collector', verbose: 'false'
             }
         }
-        /* For Agent we need to deploy */
+        stage('Validate images') {
+            sh '''
+                oc describe pod -l jaeger-infra=query-pod | grep "Image:"
+                oc describe pod -l job-name=jaeger-standalone-performance-tests | grep "Image:"
+                oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
+            '''
+        }
         stage('Run tests'){
             steps{
                 sh '''
@@ -151,7 +158,7 @@ pipeline {
                 '''
             }
         }
-       /* stage('Delete Jaeger at end') {
+       stage('Delete Jaeger at end') {
             when {
                 expression { params.DELETE_JAEGER_AT_END  }
             }
@@ -161,13 +168,16 @@ pipeline {
                     sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
                 }
             }
-        } */
-        /*stage('Delete Job at end') {
+        }
+        stage('Delete Job at end') {
+            when {
+                expression { params.DELETE_JAEGER_AT_END  }
+            }
             steps {
                 sh 'oc delete job jaeger-standalone-performance-tests || true'
             }
-        }*/
-        stage('Cleanup pods') {
+        }
+        stage('Cleanup build pods') {
             steps {
                 script {
                     sh 'oc get pods | grep Completed | awk {"print \\$1"} | xargs oc delete pod || true'
