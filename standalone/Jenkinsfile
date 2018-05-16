@@ -35,14 +35,14 @@ pipeline {
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
 
-        booleanParam(name: 'RUN_SMOKE_TESTS', defaultValue: true, description: 'Run smoke tests in addition to the performance tests')
+        booleanParam(name: 'RUN_SMOKE_TESTS', defaultValue: false, description: 'Run smoke tests in addition to the performance tests')
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
 
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888/openshift3-istio-tech-preview/jaeger-agent:1.4.1', description: 'Agent Image NOTE: Do NOT quote backslashes')
-        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-collector:1.4.1', description: 'Collector image NOTE: quote backslashes')
-        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'brew-pulp-docker01.web.prod.ext.phx2.redhat.com:8888\\/openshift3-istio-tech-preview\\/jaeger-query:1.4.1', description: 'Query image NOTE: quote backslashes')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Agent Image NOTE: Do NOT quote backslashes')
+        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing\\/jaeger-collector:latest', description: 'Collector image NOTE: quote backslashes')
+        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing\\/jaeger-query:latest', description: 'Query image NOTE: quote backslashes')
     }
     stages {
         stage('Set name and description') {
