@@ -170,7 +170,7 @@ pipeline {
                     steps{
                         sh '''
                             rm -rf jaeger-java-test
-                            git clone https://github.com/Hawkular-QE/jaeger-java-test.git
+                            git clone https://github.com/Kiali-QE/jaeger-java-test.git
                             cd jaeger-java-test
 
                             export USE_COLLECTOR_OR_AGENT=collector
