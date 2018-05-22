@@ -154,32 +154,33 @@ pipeline {
                 '''
             }
         }
-        stage('Validate images') {
+        stage('Validate images and UI') {
             steps {
                 sh '''
                     oc describe pod -l jaeger-infra=query-pod | grep "Image:"
                     oc describe pod -l jaeger-infra=collector-pod | grep "Image:"
                     oc describe pod --selector='job-name=jaeger-standalone-performance-tests' | grep "Image:"
+                    curl -i ${JAEGER_QUERY_HOST}:/${JAEGER_QUERY_SERVICE_PORT}/search
                 '''
             }
         }
         stage('smoke test with collector'){
-                    when {
-                        expression { params.RUN_SMOKE_TESTS  }
-                    }
-                    steps{
-                        sh '''
-                            rm -rf jaeger-java-test
-                            git clone https://github.com/Kiali-QE/jaeger-java-test.git
-                            cd jaeger-java-test
+            when {
+                expression { params.RUN_SMOKE_TESTS  }
+            }
+            steps{
+                sh '''
+                    rm -rf jaeger-java-test
+                    git clone https://github.com/Kiali-QE/jaeger-java-test.git
+                    cd jaeger-java-test
 
-                            export USE_COLLECTOR_OR_AGENT=collector
-                            mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
-                            cd ..
-                            rm -rf jaeger-java-test
-                        '''
-                    }
-                }
+                    export USE_COLLECTOR_OR_AGENT=collector
+                    mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
+                    cd ..
+                    rm -rf jaeger-java-test
+                '''
+            }
+        }
         stage('Delete Jaeger at end') {
             when {
                 expression { params.DELETE_JAEGER_AT_END  }
