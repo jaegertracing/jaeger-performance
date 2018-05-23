@@ -30,7 +30,7 @@ pipeline {
         string(name: 'TRACERS_PER_POD', defaultValue: '1')
         string(name: 'COLLECTOR_PODS', defaultValue: '1')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
-        string(name: 'ES_MEMORY', defaultValue: '1Gi', description: 'Memory for each elasticsearch pod')
+        string(name: 'ES_MEMORY', defaultValue: '2Gi', description: 'Memory for each elasticsearch pod')
         string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
         string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
         string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
