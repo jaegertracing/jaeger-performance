@@ -56,7 +56,7 @@ pipeline {
         stage('Delete Jaeger') {
             steps {
                 sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1 || true'
-                sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
+                sh 'oc delete all,template,daemonset,configmap -l jaeger-infra || true'
                 sh 'env | sort'
             }
         }
@@ -188,7 +188,7 @@ pipeline {
             steps {
                 script {
                     sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1 || true'
-                    sh 'oc delete all,template,daemonset,configmap -l jaeger-infra'
+                    sh 'oc delete all,template,daemonset,configmap -l jaeger-infra || true'
                 }
             }
         }
