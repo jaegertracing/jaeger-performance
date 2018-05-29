@@ -28,8 +28,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
-import io.jaegertracing.qe.restclient.SimpleRestClient;
-import io.jaegertracing.qe.restclient.model.Datum;
 import io.jaegertracing.qe.tests.util.PodWatcher;
 
 import java.io.IOException;
@@ -39,9 +37,7 @@ import java.nio.file.StandardOpenOption;
 import java.text.NumberFormat;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -187,10 +183,7 @@ public class ValidateTracesTest {
      * @return actual number of traces found in ElasticSearch
      */
     private int validateElasticSearchTraces(int expectedTraceCount) throws IOException {
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-        String formattedDate = now.format(formatter);
-        String targetUrlString = "/jaeger-span-" + formattedDate + "/_count";
+        String targetUrlString = "/jaeger-span-*/_count";
         logger.info("Using ElasticSearch URL : [" + targetUrlString + "]");
 
         RestClient restClient = getESRestClient();
