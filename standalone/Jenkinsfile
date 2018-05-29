@@ -148,6 +148,9 @@ pipeline {
                     pwd
                     git status
                     mvn clean install
+                    oc logs -f elasticsearch-0 > es0.txt &
+                    oc logs -f elasticsearch-1 > es1.txt &
+                    oc logs -f elasticsearch-2 > es2.txt &
                     cd standalone
                     mvn --activate-profiles openshift clean install fabric8:deploy -Djaeger.agent.image=${JAEGER_AGENT_IMAGE} -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                     mvn --activate-profiles validate -Dfailsafe.rerunFailingTestsCount=2 clean verify
@@ -215,6 +218,19 @@ pipeline {
                 env.TRACE_COUNT=readFile'standalone/tracesCreatedCount.txt'
                 env.TRACES_FOUND_COUNT=readFile'standalone/tracesFoundCount.txt'
                 currentBuild.description =" Traces create " + env.TRACE_COUNT + " Traces found " + env.TRACES_FOUND_COUNT
+
+            }
+        }
+        failure {
+            script {
+                sh '''
+                    echo "--------------------------------- ES0 ---------------------------------"
+                    cat es0.txt
+                    echo "--------------------------------- ES1 ---------------------------------"
+                    cat es1.txt
+                    echo "--------------------------------- ES2 ---------------------------------"
+                    cat es2.txt
+                '''
             }
         }
     }
