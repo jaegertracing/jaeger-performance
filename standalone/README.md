@@ -32,7 +32,27 @@ a `Build With parameters` link.  Click on this, and wait for the job to fail.
 
 After the first run you should see the `Build with Parameters` link.  Click on this.
 
-TODO explain parameters.
+NOTE: be sure to check the ES_MEMORY setting.  It currently defaults to **2Gi** but as 3 elasticsearch replicas are created 
+that may cause problems on minishift or smaller OpenShift installations, so you may want to reduce this to **1Gi** or **512Mi**
+
+#### Test parameters
++ `USE_AGENT_OR_COLLECTOR` Determines how traces will be created
++ `SPAN_STORAGE_TYPE` Which back end to use.  Typically we test with ElasticSearch
++ `DURATION_IN_MINUTES` Amount of time trace creation will run for
++ `THREAD_COUNT` Number of _TraceWriter_ threads to create per `WORKER_PODS`
++ `DELAY` Delay in milliseconds between trace creation
++ `WORKER_PODS` The number of pods to run _TraceWriter_ threads in
++ `TRACERS_PER_POD` The number of distinct Jaeger Tracers to create per `WORKER_POD`
++ `COLLECTOR_PODS` Number of `jaeger-collector` replicas to create
++ `COLLECTOR_QUEUE_SIZE` Startup option for jaeger-collector
++ `ES_MEMORY` Amount of memory to allocate to each ElasticSearch pod
++ `ES_BULK_SIZE, ES_BULK_WORKERS, ES_BULK_FLUSH_INTERVAL` Startup options for `jaeger-collector` when using ElasticSearch
++ `JAEGER_SAMPLING_RATE` Percentage of traces to store to back end.
+
+Less typical options
++ `DELETE_JAEGER_AT_END, DELETE_JOB_AT_END` Permits leaving Jaeger or _TracerWriter_ running on OpenShift if desired.  This is sometimes useful for debugging.
++ `RUN_SMOKE_TESTS` Run the smoke tests, usually only used when testing specific images
++ `JAEGER_AGENT_IMAGE, JAEGER_COLLECTOR_IMAGE, JAEGER_QUERY_IMAGE` Override default `latest` docker hub images if desired
 
 
 ## Running on a desktop
