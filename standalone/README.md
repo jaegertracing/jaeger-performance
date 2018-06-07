@@ -19,6 +19,11 @@ or Cassandra Java APIs.
 The Jenkinsfile is designed to be run on a Jenkins instance deployed within OpenShift.  This is required to be able to 
 connect to Jaeger Agent or Connector ports, which are not accessible outside of the cluster.
 
+### Updates for ElasticSearch
+In order to run ElasticSearch on your OpenShift cluster, you may have to have your cluster admin execute the command `sudo sysctl -w vm.max_map_count=262144`
+
+If you are running on minishift you can do: `minishift ssh 'echo "sysctl -w vm.max_map_count=262144" | sudo tee -a /var/lib/boot2docker/bootlocal.sh'`
+
 ### Creating the Jenkins job
 + In Jenkins, create a new item.  Give it a name, select the `Pipeline` type, and click on OK
 + Select `Do not allow concurrent builds`
