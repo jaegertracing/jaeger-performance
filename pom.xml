@@ -29,12 +29,12 @@
         <checkstyle.version>8.10.1</checkstyle.version>
         <elasticsearch.version>5.6.6</elasticsearch.version>
         <fabric8.kubernetes.client.version>3.1.12</fabric8.kubernetes.client.version>
-        <fabric8.kubernetes.model.version>2.0.9</fabric8.kubernetes.model.version>
+        <fabric8.kubernetes.model.version>2.1.1</fabric8.kubernetes.model.version>
         <fabric8-maven-plugin.version>3.5.35</fabric8-maven-plugin.version>
         <fabric8.openshift.client.version>3.1.12</fabric8.openshift.client.version>
         <glassfish.jersey.client.version>2.27</glassfish.jersey.client.version>
         <jackson.version>2.9.5</jackson.version>
-        <jaeger.version>0.28.0</jaeger.version>
+        <jaeger.version>0.29.0</jaeger.version>
         <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>

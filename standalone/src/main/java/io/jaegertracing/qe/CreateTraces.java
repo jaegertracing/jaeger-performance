@@ -88,7 +88,8 @@ public class CreateTraces {
         } else {
             // use the collector
             String httpEndpoint = "http://" + JAEGER_COLLECTOR_HOST + ":" + JAEGER_COLLECTOR_PORT + "/api/traces";
-            sender = new HttpSender(httpEndpoint);
+            sender = new HttpSender.Builder(httpEndpoint)
+                    .build();
             logger.info("Using JAEGER tracer using collector on host [" + JAEGER_COLLECTOR_HOST + "] port [" + JAEGER_COLLECTOR_PORT +
                     "] Service Name [" + TEST_SERVICE_NAME + "] Sampling rate [" + JAEGER_SAMPLING_RATE
                     + "] Max queue size: [" + JAEGER_MAX_QUEUE_SIZE + "]");
