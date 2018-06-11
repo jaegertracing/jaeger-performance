@@ -100,6 +100,9 @@ public class TimeQueriesTest {
 
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, 1);
         System.out.println("Got " + traces.size() + " Traces ");
+        Instant testEndTime = Instant.now();
+        long duration = Duration.between(testStartTime, testEndTime).toMillis();
+        logger.info("Retrieval of " + traces.size() + " spans by operation name took " + numberFormat.format(duration) + " milliseconds");
     }
 
 
