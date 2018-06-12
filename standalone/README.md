@@ -28,12 +28,12 @@ If you are running on minishift you can do: `minishift ssh 'echo "sysctl -w vm.m
 + In Jenkins, create a new item.  Give it a name, select the `Pipeline` type, and click on OK
 + Select `Do not allow concurrent builds`
 + In the Pipeline section select `Pipeline script from SCM`.  Select `Git` as SCM, and enter the URL of this repo next to `Repository URL`
-+ Change `Script Path ` to `standalone/Jenkins`
++ Change `Script Path ` to `standalone/Jenkinsfile`
 + Click on `SAVE`
 
 ### Running the test
 NOTE: Because of this bug https://issues.jenkins-ci.org/browse/JENKINS-41929 you will only see a `Build Now` link instead of
-a `Build With parameters` link.  Click on this, and wait for the job to fail.  
+a `Build With parameters` link.  Click on this, and wait for the job to fail and refresh the page.
 
 After the first run you should see the `Build with Parameters` link.  Click on this.
 
