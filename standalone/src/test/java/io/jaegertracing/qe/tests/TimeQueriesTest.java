@@ -35,11 +35,13 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
+import org.junit.FixMethodOrder;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
+import org.junit.runners.MethodSorters;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,6 +58,7 @@ import org.slf4j.LoggerFactory;
  * TODO How do we get test parameters, i.e. number of traces created, number of pods that ran, number of threads, etc?
  *
  */
+@FixMethodOrder(MethodSorters.NAME_ASCENDING)  // Run tests in order to simplify reporting
 public class TimeQueriesTest {
     private static final Map<String, String> envs = System.getenv();
     private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
@@ -98,10 +101,9 @@ public class TimeQueriesTest {
         queryParameters.put("limit", Arrays.asList("1"));
 
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, 1);
-        System.out.println("Got " + traces.size() + " Traces ");
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + traces.size() + " spans by operation name took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + traces.size() + " in simpleTimedQueryTest took " + numberFormat.format(duration) + " milliseconds");
     }
 
 
@@ -112,7 +114,7 @@ public class TimeQueriesTest {
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + limit + " spans took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + limit + " spans in timeGetByServiceNameTest took " + numberFormat.format(duration) + " milliseconds");
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -131,7 +133,7 @@ public class TimeQueriesTest {
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + limit + " spans by operation name took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + limit + " spans in testGetWithOperationName took " + numberFormat.format(duration) + " milliseconds");
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -152,7 +154,7 @@ public class TimeQueriesTest {
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + limit + " spans by one tag took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + limit + " spans in testGetWithOneTag took " + numberFormat.format(duration) + " milliseconds");
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -175,7 +177,7 @@ public class TimeQueriesTest {
         List<Datum> traces = simpleRestClient.getTraces(queryParameters, limit);
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
-        logger.info("Retrieval of " + limit + " spans with two  took " + numberFormat.format(duration) + " milliseconds");
+        logger.info("Retrieval of " + limit + " spans in testGetWithTwoTags took " + numberFormat.format(duration) + " milliseconds");
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
