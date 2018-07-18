@@ -20,6 +20,8 @@ import io.jaegertracing.qe.restclient.SimpleRestClient;
 import io.jaegertracing.qe.restclient.model.Datum;
 import io.jaegertracing.qe.restclient.model.Span;
 import io.jaegertracing.qe.restclient.model.Tag;
+import io.jaegertracing.qe.result.QueryStatus;
+import io.jaegertracing.qe.result.TestReport;
 
 import java.text.NumberFormat;
 import java.time.Duration;
@@ -33,6 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -95,6 +98,11 @@ public class TimeQueriesTest {
         testStartTime = Instant.now();
     }
 
+    @After
+    public void teardown() {
+        logger.info("{}", TestReport.getInstance().getStringReport());        
+    }
+    
     @Test
     public void simpleTimedQueryTest() {
         SimpleRestClient simpleRestClient = new SimpleRestClient();
@@ -104,6 +112,7 @@ public class TimeQueriesTest {
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
         logger.info("Retrieval of " + traces.size() + " in simpleTimedQueryTest took " + numberFormat.format(duration) + " milliseconds");
+        TestReport.getInstance().addQueryStatus(new QueryStatus("simpleTimedQueryTest", queryParameters.toString(), duration));
     }
 
 
@@ -115,6 +124,7 @@ public class TimeQueriesTest {
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
         logger.info("Retrieval of " + limit + " spans in timeGetByServiceNameTest took " + numberFormat.format(duration) + " milliseconds");
+        TestReport.getInstance().addQueryStatus(new QueryStatus("timeGetByServiceNameTest", queryParameters.toString(), duration));
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -134,6 +144,7 @@ public class TimeQueriesTest {
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
         logger.info("Retrieval of " + limit + " spans in testGetWithOperationName took " + numberFormat.format(duration) + " milliseconds");
+        TestReport.getInstance().addQueryStatus(new QueryStatus("testGetWithOperationName", queryParameters.toString(), duration));
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -155,6 +166,7 @@ public class TimeQueriesTest {
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
         logger.info("Retrieval of " + limit + " spans in testGetWithOneTag took " + numberFormat.format(duration) + " milliseconds");
+        TestReport.getInstance().addQueryStatus(new QueryStatus("testGetWithOneTag", queryParameters.toString(), duration));
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
@@ -178,6 +190,7 @@ public class TimeQueriesTest {
         Instant testEndTime = Instant.now();
         long duration = Duration.between(testStartTime, testEndTime).toMillis();
         logger.info("Retrieval of " + limit + " spans in testGetWithTwoTags took " + numberFormat.format(duration) + " milliseconds");
+        TestReport.getInstance().addQueryStatus(new QueryStatus("testGetWithTwoTags", queryParameters.toString(), duration));
         assertNotNull(traces);
         assertEquals(limit, traces.size());
 
