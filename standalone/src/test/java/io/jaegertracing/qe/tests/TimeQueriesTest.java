@@ -99,7 +99,7 @@ public class TimeQueriesTest {
     }
 
     @AfterClass
-    public void teardown() {
+    public static void teardown() {
         logger.info("{}", TestReport.getInstance().getStringReport());        
     }
     
