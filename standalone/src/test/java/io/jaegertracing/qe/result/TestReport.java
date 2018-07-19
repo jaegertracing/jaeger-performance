@@ -57,7 +57,7 @@ public class TestReport {
         builder.append("\n\n======================= TEST SUMMARY REPORT =======================\n");
 
         builder.append("Test configuration: \n");
-        builder.append("------------------------------------------------------------\n");
+        builder.append("-----------------------------------------------------------------------\n");
         builder.append("   Test duration           : ")
                 .append(timetaken(CreateTraces.DURATION_IN_MINUTES * 1000 * 60)).append("\n");
         builder.append("   Thread count            : ").append(CreateTraces.THREAD_COUNT).append("\n");
@@ -83,23 +83,23 @@ public class TestReport {
         builder.append("   Collector image         : ").append(envs.get("JAEGER_COLLECTOR_IMAGE")).append("\n");
         builder.append("   Query image             : ").append(envs.get("JAEGER_QUERY_IMAGE")).append("\n");
 
-        builder.append("------------------------------------------------------------\n\n");
+        builder.append("-----------------------------------------------------------------------\n\n");
 
         final double dropPercentage = 100.0 - (((double) spanCountFound / spanCountSent) * 100.0);
         final int spansPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
                 * new Integer(envs.getOrDefault("WORKER_PODS", "1"));
 
         builder.append("Span count status: \n");
-        builder.append("--------------------------------------------------\n");
+        builder.append("-----------------------------------------------------------------------\n");
         builder.append("   Spans per second : ").append(spansPersecond).append(" (aprox)\n");
         builder.append("   Spans per minute : ").append(spansPersecond * 60).append(" (aprox)\n");
         builder.append("   Sent             : ").append(spanCountSent).append("\n");
         builder.append("   Found            : ").append(spanCountFound).append("\n");
         builder.append("   Dropped %        : ").append(decimalFormat.format(dropPercentage)).append("\n");
-        builder.append("--------------------------------------------------\n\n");
+        builder.append("-----------------------------------------------------------------------\n\n");
 
         builder.append("Query execution status: \n");
-        builder.append("-----------------------\n");
+        builder.append("-----------------------------------------------------------------------\n");
         for (QueryStatus status : statusList) {
             builder.append("   Name       : ").append(status.getName()).append("\n");
             builder.append("   Timetaken  : ").append(timetaken(status.getTimetaken())).append("\n");
