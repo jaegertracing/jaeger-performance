@@ -85,17 +85,17 @@ public class TestReport {
         builder.append("-----------------------------------------------------------------------\n\n");
 
         final double dropPercentage = 100.0 - (((double) spanCountFound / spanCountSent) * 100.0);
-        final int spansPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
+        final int tracesPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
                 * new Integer(envs.getOrDefault("WORKER_PODS", "1"));
 
         builder.append("Span count status: \n");
         builder.append("-----------------------------------------------------------------------\n");
-        builder.append("   Spans sent to    : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
-        builder.append("   Spans per second : ").append(spansPersecond).append(" (aprox)\n");
-        builder.append("   Spans per minute : ").append(spansPersecond * 60).append(" (aprox)\n");
-        builder.append("   Sent             : ").append(spanCountSent).append("\n");
-        builder.append("   Found            : ").append(spanCountFound).append("\n");
-        builder.append("   Dropped %        : ").append(decimalFormat.format(dropPercentage)).append("\n");
+        builder.append("   Traces sent to  : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
+        builder.append("   Traces / second : ").append(tracesPersecond).append(" (aprox)\n");
+        builder.append("   Traces / minute : ").append(tracesPersecond * 60).append(" (aprox)\n");
+        builder.append("   Sent            : ").append(spanCountSent).append("\n");
+        builder.append("   Found           : ").append(spanCountFound).append("\n");
+        builder.append("   Dropped %       : ").append(decimalFormat.format(dropPercentage)).append("\n");
         builder.append("-----------------------------------------------------------------------\n\n");
 
         builder.append("Query execution status: \n");
