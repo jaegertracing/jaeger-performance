@@ -67,6 +67,10 @@
             <artifactId>jaeger-core</artifactId>
         </dependency>
         <dependency>
+        	<groupId>io.jaegertracing</groupId>
+        	<artifactId>jaeger-thrift</artifactId>
+    	</dependency>
+        <dependency>
             <groupId>com.datastax.cassandra</groupId>
             <artifactId>cassandra-driver-core</artifactId>
         </dependency>

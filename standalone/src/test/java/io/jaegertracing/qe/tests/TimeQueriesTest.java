@@ -35,7 +35,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
@@ -98,7 +98,7 @@ public class TimeQueriesTest {
         testStartTime = Instant.now();
     }
 
-    @After
+    @AfterClass
     public void teardown() {
         logger.info("{}", TestReport.getInstance().getStringReport());        
     }

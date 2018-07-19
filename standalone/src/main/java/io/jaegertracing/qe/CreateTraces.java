@@ -13,15 +13,14 @@
  */
 package io.jaegertracing.qe;
 
-import io.jaegertracing.reporters.CompositeReporter;
-import io.jaegertracing.reporters.LoggingReporter;
-import io.jaegertracing.reporters.RemoteReporter;
-import io.jaegertracing.reporters.Reporter;
-import io.jaegertracing.samplers.ProbabilisticSampler;
-import io.jaegertracing.samplers.Sampler;
-import io.jaegertracing.senders.HttpSender;
-import io.jaegertracing.senders.Sender;
-import io.jaegertracing.senders.UdpSender;
+import io.jaegertracing.Configuration.SenderConfiguration;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.CompositeReporter;
+import io.jaegertracing.internal.reporters.LoggingReporter;
+import io.jaegertracing.internal.reporters.RemoteReporter;
+import io.jaegertracing.internal.samplers.ProbabilisticSampler;
+import io.jaegertracing.spi.Reporter;
+import io.jaegertracing.spi.Sampler;
 import io.opentracing.Tracer;
 
 import java.io.IOException;
@@ -77,26 +76,25 @@ public class CreateTraces {
      */
     private static Tracer createJaegerTracer() {
         Tracer tracer;
-        Sender sender;
+        SenderConfiguration conf = null;
         CompositeReporter compositeReporter;
 
         if (USE_AGENT_OR_COLLECTOR.equalsIgnoreCase("agent")) {
-            sender = new UdpSender(JAEGER_AGENT_HOST, JAEGER_UDP_PORT, JAEGER_MAX_PACKET_SIZE);
+            conf = new SenderConfiguration().withAgentHost(JAEGER_AGENT_HOST).withAgentPort(JAEGER_UDP_PORT);
             logger.info("Using JAEGER tracer using agent on host [" + JAEGER_AGENT_HOST + "] port [" + JAEGER_UDP_PORT +
                     "] Service Name [" + TEST_SERVICE_NAME + "] Sampling rate [" + JAEGER_SAMPLING_RATE
                     + "] Max queue size: [" + JAEGER_MAX_QUEUE_SIZE + "]");
         } else {
             // use the collector
             String httpEndpoint = "http://" + JAEGER_COLLECTOR_HOST + ":" + JAEGER_COLLECTOR_PORT + "/api/traces";
-            sender = new HttpSender.Builder(httpEndpoint)
-                    .build();
+            conf = new SenderConfiguration().withEndpoint(httpEndpoint);
             logger.info("Using JAEGER tracer using collector on host [" + JAEGER_COLLECTOR_HOST + "] port [" + JAEGER_COLLECTOR_PORT +
                     "] Service Name [" + TEST_SERVICE_NAME + "] Sampling rate [" + JAEGER_SAMPLING_RATE
                     + "] Max queue size: [" + JAEGER_MAX_QUEUE_SIZE + "]");
         }
 
         RemoteReporter remoteReporter = new RemoteReporter.Builder()
-                .withSender(sender)
+                .withSender(conf.getSender())
                 .withFlushInterval(JAEGER_FLUSH_INTERVAL)
                 .withMaxQueueSize(JAEGER_MAX_QUEUE_SIZE)
                 .build();
@@ -108,8 +106,8 @@ public class CreateTraces {
             compositeReporter = new CompositeReporter(remoteReporter);
         }
 
-        Sampler sampler = new ProbabilisticSampler(JAEGER_SAMPLING_RATE);
-        tracer = new io.jaegertracing.Tracer.Builder(TEST_SERVICE_NAME)
+        Sampler sampler = new ProbabilisticSampler(1.0);
+        tracer = new JaegerTracer.Builder(TEST_SERVICE_NAME)
                 .withReporter(compositeReporter)
                 .withSampler(sampler)
                 .build();
@@ -186,7 +184,7 @@ public class CreateTraces {
         } catch (InterruptedException e) {
             logger.warn("Interrupted Exception", e);
         }
-        io.jaegertracing.Tracer jaegerTracer = (io.jaegertracing.Tracer) tracer;
+        JaegerTracer jaegerTracer = (JaegerTracer) tracer;
         jaegerTracer.close();
     }
 
