@@ -14,9 +14,14 @@
 
 package io.jaegertracing.qe.result;
 
+import io.jaegertracing.qe.CreateTraces;
+
 import java.text.DecimalFormat;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.lang3.time.DurationFormatUtils;
 
 public class TestReport {
     private static TestReport _instance = new TestReport();
@@ -29,7 +34,9 @@ public class TestReport {
         return _instance;
     }
 
-    DecimalFormat decimalFormat = new DecimalFormat("#.000");
+    private static final Map<String, String> envs = System.getenv();
+
+    DecimalFormat decimalFormat = new DecimalFormat("#0.000");
 
     private long spanCountSent = -1;
     private long spanCountFound = -1;
@@ -49,24 +56,62 @@ public class TestReport {
         StringBuilder builder = new StringBuilder();
         builder.append("\n\n======================= TEST SUMMARY REPORT =======================\n");
 
+        builder.append("Test configuration: \n");
+        builder.append("------------------------------------------------------------\n");
+        builder.append("   Test duration           : ")
+                .append(timetaken(CreateTraces.DURATION_IN_MINUTES * 1000 * 60)).append("\n");
+        builder.append("   Thread count            : ").append(CreateTraces.THREAD_COUNT).append("\n");
+        builder.append("   Delay b/w span creation : ").append(CreateTraces.DELAY).append(" ms\n");
+        builder.append("   Span sent to            : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
+        builder.append("   Workers pod count       : ").append(envs.get("WORKER_PODS")).append("\n");
+        builder.append("   Tracers per pod         : ").append(CreateTraces.TRACERS_PER_POD).append("\n");
+        builder.append("   Collector pod count     : ").append(envs.get("COLLECTOR_PODS")).append("\n");
+        builder.append("   Collector queue size    : ").append(envs.get("COLLECTOR_QUEUE_SIZE")).append("\n");
+        builder.append("   Storage type            : ").append(envs.get("SPAN_STORAGE_TYPE")).append("\n");
+        builder.append("   ES memory               : ").append(envs.get("ES_MEMORY")).append("\n");
+        builder.append("   ES bulk size            : ").append(envs.get("ES_BULK_SIZE")).append("\n");
+        builder.append("   ES bulk workers         : ").append(envs.get("ES_BULK_WORKERS")).append("\n");
+        builder.append("   ES bulk flush interval  : ").append(envs.get("ES_BULK_FLUSH_INTERVAL")).append("\n");
+        builder.append("   Jaeger sampling rate    : ").append(CreateTraces.JAEGER_SAMPLING_RATE).append("\n");
+        builder.append("   Jaeger flush interval   : ").append(CreateTraces.JAEGER_FLUSH_INTERVAL).append(" ms\n");
+        builder.append("   Jaeger max queue size   : ").append(CreateTraces.JAEGER_MAX_QUEUE_SIZE).append("\n");
+        builder.append("   Collector host          : ").append(CreateTraces.JAEGER_COLLECTOR_HOST).append(":")
+                .append(CreateTraces.JAEGER_COLLECTOR_PORT).append("\n");
+        builder.append("   Agent host(UDP)         : ").append(CreateTraces.JAEGER_AGENT_HOST).append(":")
+                .append(CreateTraces.JAEGER_UDP_PORT).append("\n");
+        builder.append("   Agent image             : ").append(envs.get("JAEGER_AGENT_IMAGE")).append("\n");
+        builder.append("   Collector image         : ").append(envs.get("JAEGER_COLLECTOR_IMAGE")).append("\n");
+        builder.append("   Query image             : ").append(envs.get("JAEGER_QUERY_IMAGE")).append("\n");
+
+        builder.append("------------------------------------------------------------\n\n");
+
+        final double dropPercentage = 100.0 - (((double) spanCountFound / spanCountSent) * 100.0);
+        final int spansPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
+                * new Integer(envs.getOrDefault("WORKER_PODS", "1"));
+
         builder.append("Span count status: \n");
-        builder.append("------------------\n");
-        builder.append("   Sent   : ").append(spanCountSent).append("\n");
-        builder.append("   Found  : ").append(spanCountFound).append("\n");
-        double dropPercentage = 100.0 - (((double) spanCountFound / spanCountSent) * 100.0);
-        builder.append("   Drop % : ").append(decimalFormat.format(dropPercentage)).append("\n");
-        builder.append("------------------\n\n");
+        builder.append("--------------------------------------------------\n");
+        builder.append("   Spans per second : ").append(spansPersecond).append(" (aprox)\n");
+        builder.append("   Spans per minute : ").append(spansPersecond * 60).append(" (aprox)\n");
+        builder.append("   Sent             : ").append(spanCountSent).append("\n");
+        builder.append("   Found            : ").append(spanCountFound).append("\n");
+        builder.append("   Dropped %        : ").append(decimalFormat.format(dropPercentage)).append("\n");
+        builder.append("--------------------------------------------------\n\n");
 
         builder.append("Query execution status: \n");
         builder.append("-----------------------\n");
         for (QueryStatus status : statusList) {
             builder.append("   Name       : ").append(status.getName()).append("\n");
-            builder.append("   Timetaken  : ").append(status.getTimetaken()).append("\n");
+            builder.append("   Timetaken  : ").append(timetaken(status.getTimetaken())).append("\n");
             builder.append("   Parameters : ").append(status.getQueryParameters()).append("\n\n");
         }
 
         builder.append("=============================== END ===============================\n\n");
 
         return builder.toString();
+    }
+
+    private String timetaken(long durationMillis) {
+        return DurationFormatUtils.formatDurationHMS(durationMillis);
     }
 }
