@@ -54,7 +54,7 @@ public class TestReport {
 
     public String getStringReport() {
         StringBuilder builder = new StringBuilder();
-        builder.append("\n\n======================= TEST SUMMARY REPORT =======================\n");
+        builder.append("\n\n========================= TEST SUMMARY REPORT =========================\n");
 
         builder.append("Test configuration: \n");
         builder.append("-----------------------------------------------------------------------\n");
@@ -62,7 +62,6 @@ public class TestReport {
                 .append(timetaken(CreateTraces.DURATION_IN_MINUTES * 1000 * 60)).append("\n");
         builder.append("   Thread count            : ").append(CreateTraces.THREAD_COUNT).append("\n");
         builder.append("   Delay b/w span creation : ").append(CreateTraces.DELAY).append(" ms\n");
-        builder.append("   Span sent to            : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
         builder.append("   Workers pod count       : ").append(envs.get("WORKER_PODS")).append("\n");
         builder.append("   Tracers per pod         : ").append(CreateTraces.TRACERS_PER_POD).append("\n");
         builder.append("   Collector pod count     : ").append(envs.get("COLLECTOR_PODS")).append("\n");
@@ -91,6 +90,7 @@ public class TestReport {
 
         builder.append("Span count status: \n");
         builder.append("-----------------------------------------------------------------------\n");
+        builder.append("   Spans sent to    : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
         builder.append("   Spans per second : ").append(spansPersecond).append(" (aprox)\n");
         builder.append("   Spans per minute : ").append(spansPersecond * 60).append(" (aprox)\n");
         builder.append("   Sent             : ").append(spanCountSent).append("\n");
@@ -106,7 +106,7 @@ public class TestReport {
             builder.append("   Parameters : ").append(status.getQueryParameters()).append("\n\n");
         }
 
-        builder.append("=============================== END ===============================\n\n");
+        builder.append("================================= END =================================\n\n");
 
         return builder.toString();
     }
