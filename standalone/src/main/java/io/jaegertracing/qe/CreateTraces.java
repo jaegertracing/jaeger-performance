@@ -106,7 +106,7 @@ public class CreateTraces {
             compositeReporter = new CompositeReporter(remoteReporter);
         }
 
-        Sampler sampler = new ProbabilisticSampler(1.0);
+        Sampler sampler = new ProbabilisticSampler(JAEGER_SAMPLING_RATE);
         tracer = new JaegerTracer.Builder(TEST_SERVICE_NAME)
                 .withReporter(compositeReporter)
                 .withSampler(sampler)
