@@ -68,9 +68,6 @@ public class TestReport {
         builder.append("   Collector queue size    : ").append(envs.get("COLLECTOR_QUEUE_SIZE")).append("\n");
         builder.append("   Storage type            : ").append(envs.get("SPAN_STORAGE_TYPE")).append("\n");
         builder.append("   ES memory               : ").append(envs.get("ES_MEMORY")).append("\n");
-        builder.append("   ES bulk size            : ").append(envs.get("ES_BULK_SIZE")).append("\n");
-        builder.append("   ES bulk workers         : ").append(envs.get("ES_BULK_WORKERS")).append("\n");
-        builder.append("   ES bulk flush interval  : ").append(envs.get("ES_BULK_FLUSH_INTERVAL")).append("\n");
         builder.append("   Jaeger sampling rate    : ").append(CreateTraces.JAEGER_SAMPLING_RATE).append("\n");
         builder.append("   Jaeger flush interval   : ").append(CreateTraces.JAEGER_FLUSH_INTERVAL).append(" ms\n");
         builder.append("   Jaeger max queue size   : ").append(CreateTraces.JAEGER_MAX_QUEUE_SIZE).append("\n");
@@ -81,6 +78,7 @@ public class TestReport {
         builder.append("   Agent image             : ").append(envs.get("JAEGER_AGENT_IMAGE")).append("\n");
         builder.append("   Collector image         : ").append(envs.get("JAEGER_COLLECTOR_IMAGE")).append("\n");
         builder.append("   Query image             : ").append(envs.get("JAEGER_QUERY_IMAGE")).append("\n");
+        builder.append("   Elasticsearch image     : ").append(envs.get("ES_IMAGE")).append("\n");
 
         builder.append("-----------------------------------------------------------------------\n\n");
 
@@ -88,7 +86,7 @@ public class TestReport {
         final int tracesPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
                 * new Integer(envs.getOrDefault("WORKER_PODS", "1"));
 
-        builder.append("Span count status: \n");
+        builder.append("Traces count status: \n");
         builder.append("-----------------------------------------------------------------------\n");
         builder.append("   Traces sent to  : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
         builder.append("   Traces / second : ").append(tracesPersecond).append(" (aprox)\n");

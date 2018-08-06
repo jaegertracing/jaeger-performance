@@ -23,10 +23,11 @@ sed -i 's;parameters:.*$;\0\n- description: ElasticSearch Bulk Sizes\n  displayN
 sed -i 's;parameters:.*$;\0\n- description: ElasticSearch Bulk Workers\n  displayName: ES Bulk Workers\n  name: ES_BULK_WORKERS\n  required: false\n  value: "10";g' jaeger-production-template.yml
 sed -i 's;parameters:.*$;\0\n- description: ElasticSearch Bulk Flush Interval\n  displayName: ES Bulk Flush Interval\n  name: ES_BULK_FLUSH_INTERVAL\n  required: false\n  value: "1s";g' jaeger-production-template.yml
 
-sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--collector.queue-size=${COLLECTOR_QUEUE_SIZE}";g' jaeger-production-template.yml
-sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.size=${ES_BULK_SIZE}";g' jaeger-production-template.yml
-sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.workers=${ES_BULK_WORKERS}";g' jaeger-production-template.yml
-sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.flush-interval=${ES_BULK_FLUSH_INTERVAL}";g' jaeger-production-template.yml
+# sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--collector.queue-size=${COLLECTOR_QUEUE_SIZE}";g' jaeger-production-template.yml
+# sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.size=${ES_BULK_SIZE}";g' jaeger-production-template.yml
+# sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.workers=${ES_BULK_WORKERS}";g' jaeger-production-template.yml
+# sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bulk.flush-interval=${ES_BULK_FLUSH_INTERVAL}";g' jaeger-production-template.yml
+sed -i 's;"--config-file=/conf/collector.yaml";"--config-file=/conf/collector.yaml", "--collector.queue-size=${COLLECTOR_QUEUE_SIZE}";g' jaeger-production-template.yml
 
 #
 # HACK alert.  Change the number of replicas for the collector here if desired.  This script currently depends
@@ -34,3 +35,4 @@ sed -i 's;.*- "--config-file=/conf/collector.yaml".*$;\0\n            - "--es.bu
 # occuring before the 'replicas: 1' entry for anything else, such as the jaeger-ui
 sed -i '0,/replicas: 1/s/replicas: 1/replicas: ${COLLECTOR_PODS}/' jaeger-production-template.yml
 
+cat jaeger-production-template.yml
