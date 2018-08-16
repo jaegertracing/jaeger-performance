@@ -20,7 +20,7 @@
 set -x
 curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
 sed -i 's/512Mi/'${ES_MEMORY}'/g' es-cluster-deployment.yml
-sed -i 's/registry.centos.org\/rhsyseng\/elasticsearch:5.5.2/'${ES_IMAGE//\//\\/}'  \
+sed -i 's/registry.centos.org\/rhsyseng\/elasticsearch:5.6.10/'${ES_IMAGE//\//\\/}'  \
     importPolicy: \
       insecure: '${ES_IMAGE_INSECURE}'/g' es-cluster-deployment.yml
 oc create -f es-cluster-deployment.yml
