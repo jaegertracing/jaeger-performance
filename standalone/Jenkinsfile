@@ -18,7 +18,8 @@ pipeline {
         ELASTICSEARCH_PORT = "9200"
         CASSANDRA_CLUSTER_IP = "cassandra"
         CASSANDRA_KEYSPACE_NAME="jaeger_v1_dc1"
-         DEPLOYMENT_PARAMETERS="-pIMAGE_VERSION=latest -pCOLLECTOR_QUEUE_SIZE=${COLLECTOR_QUEUE_SIZE} -pCOLLECTOR_PODS=${COLLECTOR_PODS}"
+        DEPLOYMENT_PARAMETERS="-pIMAGE_VERSION=latest -pCOLLECTOR_PODS=${COLLECTOR_PODS}"
+        LOGS_COLLECTED="false"
     }
     parameters {
         choice(choices: 'COLLECTOR\nAGENT', name: 'USE_AGENT_OR_COLLECTOR')
@@ -28,21 +29,28 @@ pipeline {
         string(name: 'DELAY', defaultValue: '100', description: 'delay in milliseconds between each span creation')
         string(name: 'WORKER_PODS', defaultValue: '1', description: 'The number of pods to run client threads in')
         string(name: 'TRACERS_PER_POD', defaultValue: '1')
-        string(name: 'COLLECTOR_PODS', defaultValue: '1')
-        string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '3000000')
-        string(name: 'ES_MEMORY', defaultValue: '2Gi', description: 'Memory for each elasticsearch pod')
-        string(name: 'ES_BULK_SIZE', defaultValue: '10000000', description: '--es.bulk.size')
-        string(name: 'ES_BULK_WORKERS', defaultValue: '10', description: '--es.bulk.workers')
-        string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '1s', description: '--es.bulk.flush-interval')
+
+        string(name: 'COLLECTOR_PODS', defaultValue: '1', description: 'The number of collector pods')
+        string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '2000', description: '--collector.queue-size')
+        string(name: 'COLLECTOR_NUM_WORKERS', defaultValue: '50', description: '--collector.num-workers')
+
+        string(name: 'ES_IMAGE', defaultValue: 'registry.centos.org/rhsyseng/elasticsearch:5.5.2', description: 'ElasticSearch image.')
+        string(name: 'ES_IMAGE_INSECURE', defaultValue: 'false', description: 'If image location not-secured(for HTTP) change to true')
+        string(name: 'ES_MEMORY', defaultValue: '1Gi', description: 'Memory for each elasticsearch pod')
+        string(name: 'ES_BULK_SIZE', defaultValue: '5000000', description: '--es.bulk.size')
+        string(name: 'ES_BULK_WORKERS', defaultValue: '1', description: '--es.bulk.workers')
+        string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '200ms', description: '--es.bulk.flush-interval')
+
+        string(name: 'QUERY_STATIC_FILES', defaultValue: '', description: '--query.static-files')
 
         booleanParam(name: 'RUN_SMOKE_TESTS', defaultValue: false, description: 'Run smoke tests in addition to the performance tests')
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
 
         string(name: 'JAEGER_SAMPLING_RATE', defaultValue: '1.0', description: '0.0 to 1.0 percent of spans to record')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Agent Image NOTE: Do NOT quote backslashes')
-        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing\\/jaeger-collector:latest', description: 'Collector image NOTE: quote backslashes')
-        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing\\/jaeger-query:latest', description: 'Query image NOTE: quote backslashes')
+        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
+        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
+        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')
     }
     stages {
         stage('Set name and description') {
@@ -88,17 +96,7 @@ pipeline {
                 expression { params.SPAN_STORAGE_TYPE == 'elasticsearch'}
             }
             steps {
-                sh '''
-                    curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
-                    sed -i 's/512Mi/'${ES_MEMORY}'/g' es-cluster-deployment.yml
-                    oc create -f es-cluster-deployment.yml
-                    while true; do
-                        replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}')
-                        ((replicas > 1)) && break
-                        sleep 1
-                     done
-                '''
-
+                sh ' ./standalone/scripts/execute-es-cluster-deployment.sh'
             }
         }
         stage('deploy Jaeger with Cassandra') {
@@ -113,7 +111,7 @@ pipeline {
                     sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
                     sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
                     grep "image:" jaeger-production-template.yml
-                    ./standalone/updateTemplateForCassandra.sh
+                    ./standalone/scripts/updateTemplateForCassandra.sh
                     oc process  ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
                 '''
             }
@@ -123,17 +121,7 @@ pipeline {
                 expression { params.SPAN_STORAGE_TYPE == 'elasticsearch'}
             }
             steps {
-                sh '''
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-elasticsearch.yml --output configmap-elasticsearch.yml
-                    oc create -f configmap-elasticsearch.yml
-                    rm configmap-elasticsearch.yml
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
-                    sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
-                    sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
-                    grep "image:" jaeger-production-template.yml
-                    ./standalone/updateTemplateForElasticSearch.sh
-                    oc process ${DEPLOYMENT_PARAMETERS} -pES_BULK_SIZE=${ES_BULK_SIZE} -pES_BULK_WORKERS=${ES_BULK_WORKERS} -pES_BULK_FLUSH_INTERVAL=${ES_BULK_FLUSH_INTERVAL} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
-                '''
+                sh './standalone/scripts/deploy_jaeger_elasticsearch.sh'
             }
         }
         stage('Wait for Jaeger Deployment') {
@@ -148,10 +136,8 @@ pipeline {
                     pwd
                     git status
                     mvn clean install
-                    oc logs -f elasticsearch-0 > es0.txt &
-                    oc logs -f elasticsearch-1 > es1.txt &
-                    oc logs -f elasticsearch-2 > es2.txt &
                     cd standalone
+                    mvn dependency:tree
                     mvn --activate-profiles openshift clean install fabric8:deploy -Djaeger.agent.image=${JAEGER_AGENT_IMAGE} -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Dthread.count=${THREAD_COUNT} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duse.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                     mvn --activate-profiles validate clean verify
                 '''
@@ -177,11 +163,20 @@ pipeline {
                     git clone https://github.com/Kiali-QE/jaeger-java-test.git
                     cd jaeger-java-test
 
+                    mvn dependency:tree
                     export USE_COLLECTOR_OR_AGENT=collector
                     mvn -Dfailsafe.rerunFailingTestsCount=2 clean test
                     cd ..
                     rm -rf jaeger-java-test
                 '''
+            }
+        }
+        stage('Collect logs'){
+            steps{
+                sh '''
+                  ./standalone/scripts/collect_logs.sh
+                  export LOGS_COLLECTED="true"
+                  '''
             }
         }
         stage('Delete Jaeger at end') {
@@ -223,14 +218,9 @@ pipeline {
         }
         failure {
             script {
-                sh '''
-                    echo "--------------------------------- ES0 ---------------------------------"
-                    cat es0.txt
-                    echo "--------------------------------- ES1 ---------------------------------"
-                    cat es1.txt
-                    echo "--------------------------------- ES2 ---------------------------------"
-                    cat es2.txt
-                '''
+                if (env.LOGS_COLLECTED == 'false') {
+                  sh './standalone/scripts/collect_logs.sh'
+                }
             }
         }
     }

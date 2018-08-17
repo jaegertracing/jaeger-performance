@@ -66,6 +66,8 @@ public class TestReport {
         builder.append("   Tracers per pod         : ").append(CreateTraces.TRACERS_PER_POD).append("\n");
         builder.append("   Collector pod count     : ").append(envs.get("COLLECTOR_PODS")).append("\n");
         builder.append("   Collector queue size    : ").append(envs.get("COLLECTOR_QUEUE_SIZE")).append("\n");
+        builder.append("   Collector workers nums  : ").append(envs.get("COLLECTOR_NUM_WORKERS")).append("\n");
+        builder.append("   Query static files      : ").append(envs.get("QUERY_STATIC_FILES")).append("\n");
         builder.append("   Storage type            : ").append(envs.get("SPAN_STORAGE_TYPE")).append("\n");
         builder.append("   ES memory               : ").append(envs.get("ES_MEMORY")).append("\n");
         builder.append("   ES bulk size            : ").append(envs.get("ES_BULK_SIZE")).append("\n");
@@ -81,14 +83,15 @@ public class TestReport {
         builder.append("   Agent image             : ").append(envs.get("JAEGER_AGENT_IMAGE")).append("\n");
         builder.append("   Collector image         : ").append(envs.get("JAEGER_COLLECTOR_IMAGE")).append("\n");
         builder.append("   Query image             : ").append(envs.get("JAEGER_QUERY_IMAGE")).append("\n");
+        builder.append("   Elasticsearch image     : ").append(envs.get("ES_IMAGE")).append("\n");
 
         builder.append("-----------------------------------------------------------------------\n\n");
 
         final double dropPercentage = 100.0 - (((double) spanCountFound / spanCountSent) * 100.0);
-        final int tracesPersecond = ((int) CreateTraces.THREAD_COUNT * (1000 / CreateTraces.DELAY))
-                * new Integer(envs.getOrDefault("WORKER_PODS", "1"));
+        final int tracesPersecond = Double.valueOf(((CreateTraces.THREAD_COUNT * (1000.0 / CreateTraces.DELAY))
+                * new Integer(envs.getOrDefault("WORKER_PODS", "1")))).intValue();
 
-        builder.append("Span count status: \n");
+        builder.append("Traces count status: \n");
         builder.append("-----------------------------------------------------------------------\n");
         builder.append("   Traces sent to  : ").append(CreateTraces.USE_AGENT_OR_COLLECTOR).append("\n");
         builder.append("   Traces / second : ").append(tracesPersecond).append(" (aprox)\n");
