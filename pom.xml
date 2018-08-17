@@ -34,7 +34,7 @@
         <fabric8.openshift.client.version>3.1.12</fabric8.openshift.client.version>
         <glassfish.jersey.client.version>2.27</glassfish.jersey.client.version>
         <jackson.version>2.9.5</jackson.version>
-        <jaeger.version>0.29.0</jaeger.version>
+        <jaeger.version>0.30.2</jaeger.version>
         <javax.ws.rs.version>2.1</javax.ws.rs.version>
         <junit.version>4.12</junit.version>
         <log4j.version>1.2.17</log4j.version>
@@ -58,7 +58,7 @@
         <dependencies>
             <dependency>
                 <groupId>io.jaegertracing</groupId>
-                <artifactId>jaeger-core</artifactId>
+                <artifactId>jaeger-client</artifactId>
                 <version>${jaeger.version}</version>
             </dependency>
             <dependency>

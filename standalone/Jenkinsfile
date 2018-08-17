@@ -152,7 +152,7 @@ pipeline {
                     oc logs -f elasticsearch-1 > es1.txt &
                     oc logs -f elasticsearch-2 > es2.txt &
                     cd standalone
-                    mvn --activate-profiles openshift clean install fabric8:deploy -Djaeger.agent.image=${JAEGER_AGENT_IMAGE} -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duser.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
+                    mvn --activate-profiles openshift clean install fabric8:deploy -Djaeger.agent.image=${JAEGER_AGENT_IMAGE} -Dtracers.per.pod=${TRACERS_PER_POD} -Dpod.count=${WORKER_PODS} -Dduration.in.minutes=${DURATION_IN_MINUTES} -Dthread.count=${THREAD_COUNT} -Ddelay=${DELAY} -Djaeger.sampling.rate=${JAEGER_SAMPLING_RATE} -Djaeger.agent.host=${JAEGER_AGENT_HOST} -Duse.agent.or.collector=${USE_AGENT_OR_COLLECTOR} -Djaeger.collector.port=${JAEGER_COLLECTOR_PORT} -Djaeger.collector.host=${JAEGER_COLLECTOR_HOST}
                     mvn --activate-profiles validate clean verify
                 '''
             }

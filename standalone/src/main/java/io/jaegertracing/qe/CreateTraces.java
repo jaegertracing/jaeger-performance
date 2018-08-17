@@ -13,15 +13,14 @@
  */
 package io.jaegertracing.qe;
 
-import io.jaegertracing.reporters.CompositeReporter;
-import io.jaegertracing.reporters.LoggingReporter;
-import io.jaegertracing.reporters.RemoteReporter;
-import io.jaegertracing.reporters.Reporter;
-import io.jaegertracing.samplers.ProbabilisticSampler;
-import io.jaegertracing.samplers.Sampler;
-import io.jaegertracing.senders.HttpSender;
-import io.jaegertracing.senders.Sender;
-import io.jaegertracing.senders.UdpSender;
+import io.jaegertracing.Configuration.SenderConfiguration;
+import io.jaegertracing.internal.JaegerTracer;
+import io.jaegertracing.internal.reporters.CompositeReporter;
+import io.jaegertracing.internal.reporters.LoggingReporter;
+import io.jaegertracing.internal.reporters.RemoteReporter;
+import io.jaegertracing.internal.samplers.ProbabilisticSampler;
+import io.jaegertracing.spi.Reporter;
+import io.jaegertracing.spi.Sampler;
 import io.opentracing.Tracer;
 
 import java.io.IOException;
@@ -47,21 +46,21 @@ import org.slf4j.LoggerFactory;
 public class CreateTraces {
     private static final Map<String, String> envs = System.getenv();
 
-    private static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
-    private static final Integer DURATION_IN_MINUTES = new Integer(envs.getOrDefault("DURATION_IN_MINUTES", "5"));
-    private static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
-    private static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
-    private static final String JAEGER_COLLECTOR_PORT = envs.getOrDefault("MY_JAEGER_COLLECTOR_PORT", "14268");
-    private static final Integer JAEGER_FLUSH_INTERVAL = new Integer(envs.getOrDefault("JAEGER_FLUSH_INTERVAL", "100"));
-    private static final Integer JAEGER_MAX_PACKET_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_PACKET_SIZE", "0"));
-    private static final Integer JAEGER_MAX_QUEUE_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_QUEUE_SIZE", "100000"));
-    private static final Double JAEGER_SAMPLING_RATE = new Double(envs.getOrDefault("JAEGER_SAMPLING_RATE", "1.0"));
-    private static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "6831"));
-    private static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
-    private static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
-    private static final Integer TRACERS_PER_POD = new Integer(envs.getOrDefault("TRACERS_PER_POD", "1"));
-    private static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "COLLECTOR");
-    private static final String USE_LOGGING_REPORTER = envs.getOrDefault("USE_LOGGING_REPORTER", "false");
+    public static final Integer DELAY = new Integer(envs.getOrDefault("DELAY", "1"));
+    public static final Integer DURATION_IN_MINUTES = new Integer(envs.getOrDefault("DURATION_IN_MINUTES", "5"));
+    public static final String JAEGER_AGENT_HOST = envs.getOrDefault("JAEGER_AGENT_HOST", "localhost");
+    public static final String JAEGER_COLLECTOR_HOST = envs.getOrDefault("JAEGER_COLLECTOR_HOST", "localhost");
+    public static final String JAEGER_COLLECTOR_PORT = envs.getOrDefault("MY_JAEGER_COLLECTOR_PORT", "14268");
+    public static final Integer JAEGER_FLUSH_INTERVAL = new Integer(envs.getOrDefault("JAEGER_FLUSH_INTERVAL", "100"));
+    public static final Integer JAEGER_MAX_PACKET_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_PACKET_SIZE", "0"));
+    public static final Integer JAEGER_MAX_QUEUE_SIZE = new Integer(envs.getOrDefault("JAEGER_MAX_QUEUE_SIZE", "100000"));
+    public static final Double JAEGER_SAMPLING_RATE = new Double(envs.getOrDefault("JAEGER_SAMPLING_RATE", "1.0"));
+    public static final Integer JAEGER_UDP_PORT = new Integer(envs.getOrDefault("JAEGER_UDP_PORT", "6831"));
+    public static final String TEST_SERVICE_NAME = envs.getOrDefault("TEST_SERVICE_NAME", "standalone");
+    public static final Integer THREAD_COUNT = new Integer(envs.getOrDefault("THREAD_COUNT", "100"));
+    public static final Integer TRACERS_PER_POD = new Integer(envs.getOrDefault("TRACERS_PER_POD", "1"));
+    public static final String USE_AGENT_OR_COLLECTOR = envs.getOrDefault("USE_AGENT_OR_COLLECTOR", "COLLECTOR");
+    public static final String USE_LOGGING_REPORTER = envs.getOrDefault("USE_LOGGING_REPORTER", "false");
 
     public static final String TRACES_CREATED_MESSAGE = "TRACES_CREATED: ";
 
@@ -77,26 +76,25 @@ public class CreateTraces {
      */
     private static Tracer createJaegerTracer() {
         Tracer tracer;
-        Sender sender;
+        SenderConfiguration conf = null;
         CompositeReporter compositeReporter;
 
         if (USE_AGENT_OR_COLLECTOR.equalsIgnoreCase("agent")) {
-            sender = new UdpSender(JAEGER_AGENT_HOST, JAEGER_UDP_PORT, JAEGER_MAX_PACKET_SIZE);
+            conf = new SenderConfiguration().withAgentHost(JAEGER_AGENT_HOST).withAgentPort(JAEGER_UDP_PORT);
             logger.info("Using JAEGER tracer using agent on host [" + JAEGER_AGENT_HOST + "] port [" + JAEGER_UDP_PORT +
                     "] Service Name [" + TEST_SERVICE_NAME + "] Sampling rate [" + JAEGER_SAMPLING_RATE
                     + "] Max queue size: [" + JAEGER_MAX_QUEUE_SIZE + "]");
         } else {
             // use the collector
             String httpEndpoint = "http://" + JAEGER_COLLECTOR_HOST + ":" + JAEGER_COLLECTOR_PORT + "/api/traces";
-            sender = new HttpSender.Builder(httpEndpoint)
-                    .build();
+            conf = new SenderConfiguration().withEndpoint(httpEndpoint);
             logger.info("Using JAEGER tracer using collector on host [" + JAEGER_COLLECTOR_HOST + "] port [" + JAEGER_COLLECTOR_PORT +
                     "] Service Name [" + TEST_SERVICE_NAME + "] Sampling rate [" + JAEGER_SAMPLING_RATE
                     + "] Max queue size: [" + JAEGER_MAX_QUEUE_SIZE + "]");
         }
 
         RemoteReporter remoteReporter = new RemoteReporter.Builder()
-                .withSender(sender)
+                .withSender(conf.getSender())
                 .withFlushInterval(JAEGER_FLUSH_INTERVAL)
                 .withMaxQueueSize(JAEGER_MAX_QUEUE_SIZE)
                 .build();
@@ -109,7 +107,7 @@ public class CreateTraces {
         }
 
         Sampler sampler = new ProbabilisticSampler(JAEGER_SAMPLING_RATE);
-        tracer = new io.jaegertracing.Tracer.Builder(TEST_SERVICE_NAME)
+        tracer = new JaegerTracer.Builder(TEST_SERVICE_NAME)
                 .withReporter(compositeReporter)
                 .withSampler(sampler)
                 .build();
@@ -186,7 +184,7 @@ public class CreateTraces {
         } catch (InterruptedException e) {
             logger.warn("Interrupted Exception", e);
         }
-        io.jaegertracing.Tracer jaegerTracer = (io.jaegertracing.Tracer) tracer;
+        JaegerTracer jaegerTracer = (JaegerTracer) tracer;
         jaegerTracer.close();
     }
 

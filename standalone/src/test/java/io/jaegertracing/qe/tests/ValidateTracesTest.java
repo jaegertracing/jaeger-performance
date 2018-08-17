@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.openshift.client.DefaultOpenShiftClient;
 import io.fabric8.openshift.client.OpenShiftClient;
+import io.jaegertracing.qe.result.TestReport;
 import io.jaegertracing.qe.tests.util.PodWatcher;
 
 import java.io.IOException;
@@ -105,6 +106,7 @@ public class ValidateTracesTest {
         long countDuration = Duration.between(startTime, countEndTime).toMillis();
         logger.info("Counting " + numberFormat.format(actualTraceCount) + " traces took " + countDuration / 1000 + "." + countDuration % 1000 + " seconds.");
         Files.write(Paths.get("tracesFoundCount.txt"), Long.toString(actualTraceCount).getBytes(), StandardOpenOption.CREATE);
+        TestReport.getInstance().updateSpanCount(expectedTraceCount.longValue(), actualTraceCount);
         assertEquals("Did not find expected number of traces", expectedTraceCount.intValue(), actualTraceCount);
     }
 
