@@ -63,7 +63,7 @@ pipeline {
         string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
         string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
         string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')
-        string(name: 'PERFORMANCE_TEST_IMAGE', defaultValue: 'jkandasa/jaeger-performance-test:1.0.0', description: 'Jaeger performance test docker image')
+        string(name: 'PERFORMANCE_TEST_IMAGE', defaultValue: 'jkandasa/jaeger-performance-test:2.0.0', description: 'Jaeger performance test docker image')
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
         booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')      
