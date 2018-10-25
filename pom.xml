@@ -1,6 +1,6 @@
 <!--
 
-    Copyright ${license.git.copyrightYears} The Jaeger Authors
+    Copyright 2018 The Jaeger Authors
 
     Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
     in compliance with the License. You may obtain a copy of the License at
@@ -161,6 +161,7 @@
           <excludes>
             <exclude>**/*.md</exclude>
             <exclude>**/logs/*</exclude>
+            <exclude>**/lombok.config</exclude>
             <exclude>openshift/Jenkinsfile</exclude>
             <exclude>LICENSE</exclude>
             <exclude>license_header.txt</exclude>
@@ -168,12 +169,20 @@
           <strictCheck>true</strictCheck>
           <failIfMissing>true</failIfMissing>
         </configuration>
+
+        <dependencies>
+          <dependency>
+            <groupId>com.mycila</groupId>
+            <artifactId>license-maven-plugin-git</artifactId>
+            <version>${version.license-maven-plugin}</version>
+          </dependency>
+        </dependencies>
         <executions>
           <execution>
             <goals>
               <goal>check</goal>
             </goals>
-             <phase>compile</phase>
+            <phase>compile</phase>
           </execution>
         </executions>
       </plugin>
