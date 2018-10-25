@@ -2,6 +2,9 @@
 
 This project is designed to do basic smoke and performance testing of [JaegerTracing](https://www.jaegertracing.io/). The primary target for these tests is OpenShift, where they can be run using the Jenkinsfile in this directory.
 
+## License
+  
+[Apache 2.0 License](./LICENSE).
 
 ### Overview of tests
 This test can be executed locally with this source code or can be executed on OpenShift with Jenkins pipeline file.
