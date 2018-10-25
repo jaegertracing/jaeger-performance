@@ -1,5 +1,5 @@
 pipeline {
-     agent { label 'slave-jaeger-qe-java' }
+     agent { label 'jaeger-qe-java' }
     options {
         disableConcurrentBuilds()
         /*timeout(time: 8, unit: 'HOURS')*/

@@ -146,7 +146,7 @@ The following dependencies need to run this job on Jenkins,
 * git
 * oc (OpenShift client)
 
-Jenkins pipeline will be looking `slave-jaeger-qe-java` labeled slave. This slave should be running with the dependencies.
+Jenkins pipeline will be looking `jaeger-qe-java` labeled slave. This slave should be running with the dependencies.
 ```
-agent { label 'slave-jaeger-qe-java' }
+agent { label 'jaeger-qe-java' }
 ```
