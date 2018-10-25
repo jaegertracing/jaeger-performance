@@ -40,7 +40,10 @@ else
 fi
 # create configmap
 oc create -f configmap-elasticsearch.yml  -n ${OS_NAMESPACE}
-rm configmap-elasticsearch.yml
+
+# move configmap file to logs directory
+mkdir -p logs
+mv configmap-elasticsearch.yml logs/
 
 # download jaeger production template from master branch
 curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
@@ -63,3 +66,7 @@ sed -i '0,/replicas: 1/s/replicas: 1/replicas: ${COLLECTOR_PODS}/' jaeger-produc
 
 # deploy jaeger template
 oc process ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml -n ${OS_NAMESPACE} | oc create -n ${OS_NAMESPACE} -f -
+
+# move template file to logs directory
+mkdir -p logs
+mv jaeger-production-template.yml logs/

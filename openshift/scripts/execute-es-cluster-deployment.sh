@@ -27,3 +27,7 @@ while true; do
     ((replicas > 1)) && break
     sleep 5
  done
+
+# move deployment file to logs directory
+mkdir -p logs
+mv es-cluster-deployment.yml logs/

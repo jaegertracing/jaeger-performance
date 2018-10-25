@@ -160,6 +160,7 @@
           <header>${project.basedir}/license_header.txt</header>
           <excludes>
             <exclude>**/*.md</exclude>
+            <exclude>**/logs/*</exclude>
             <exclude>openshift/Jenkinsfile</exclude>
             <exclude>LICENSE</exclude>
             <exclude>license_header.txt</exclude>
