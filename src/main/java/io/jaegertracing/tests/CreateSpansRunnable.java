@@ -31,23 +31,21 @@ import lombok.extern.slf4j.Slf4j;
  */
 @Slf4j
 public class CreateSpansRunnable implements Runnable {
-    class SpansTimer extends TimerTask {
+
+    class SpansReporer extends TimerTask {
 
         private long delay = 0;
 
-        public SpansTimer() {
+        public SpansReporer() {
             if (config.isPerformanceTestLongRunEnabled()) {
                 // actual is 1000 ms, modify maximum available duration based on spans count.
                 // change it to microsecond
-                int maxDuration = 700;
+                int maxDuration = 100;
                 if (config.getSpansCount() < 200) {
                     maxDuration = 700;
                 } else if (config.getSpansCount() < 500) {
                     maxDuration = 500;
-                } else {
-                    maxDuration = 100;
                 }
-
                 delay = (maxDuration * 1000L) / config.getSpansCount();
                 logger.debug("Maximun execution time per round:{}ms, delay between spans:{}us, spans count:{}",
                         maxDuration, delay, config.getSpansCount());
@@ -88,10 +86,13 @@ public class CreateSpansRunnable implements Runnable {
             } while (count < config.getSpansCount());
             if (config.isPerformanceTestLongRunEnabled()) {
                 executedCount.incrementAndGet();
-                if (executedCount.get() % 60 == 0 || executedCount.get() == 1) { // print every 1 minute once
-                    logger.debug("Round number:{}, duration:{}ms, Tracer:{}",
-                            executedCount.get(), System.currentTimeMillis() - startTime, name);
+                if (logger.isTraceEnabled()) {
+                    if (executedCount.get() % 60 == 0 || executedCount.get() == 1) { // print every 1 minute once
+                        logger.trace("Round number:{}, duration:{}ms, Tracer:{}",
+                                executedCount.get(), System.currentTimeMillis() - startTime, name);
+                    }
                 }
+
             } else {
                 logger.debug("Reporting spans done, duration:{}, Tracer:{}",
                         TestUtils.timeTaken(System.currentTimeMillis() - startTime), name);
@@ -125,11 +126,11 @@ public class CreateSpansRunnable implements Runnable {
         logger.debug("Sending spans triggered for the tracer: {}", name);
 
         if (config.isPerformanceTestQuickRunEnabled()) {
-            SpansTimer spansTimer = new SpansTimer();
-            spansTimer.run();
+            SpansReporer spansReporer = new SpansReporer();
+            spansReporer.run();
         } else {
             Timer timer = new Timer();
-            timer.scheduleAtFixedRate(new SpansTimer(), 0L, 1000L);
+            timer.scheduleAtFixedRate(new SpansReporer(), 0L, 1000L);
             try {
                 while (executedCount.get() < expectedCount) {
                     TimeUnit.MILLISECONDS.sleep(500L);
