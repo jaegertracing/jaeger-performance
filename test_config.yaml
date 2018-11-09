@@ -1,0 +1,124 @@
+#
+# Copyright 2018 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+# Jaeger tracing performance test suite configurations.
+# Some of these values below will be used in final report,
+# also used on OpenShift/Kubernetes environment to install
+# Jaeger services and database in Jenkins environment
+
+# what are all the tests need to be executed
+testsToRun: 'performance,smoke'
+
+# performance test data, two type of performance test can be executed
+# data format: [type,data]
+# 1. quick run example, 'quick,50', data: delay between spans in milliseconds
+# 2. long run example, 'long,600', data: test duration in seconds
+performanceTestData: 'quick,165'
+
+# tracers count, number of tracers shold send spans
+tracersCount: 100
+
+# spans count for per tracer.
+spansCount: 4000
+
+# Is your test is running on OpenShift environment?
+# if you run your test on OpenShift environment, you should use Jenkins
+runningOnOpenshift: false
+
+# maximum spans/data limit on Jaeger query test
+queryLimit: 20000
+
+# Number of times the query to be executed repetitively.
+# To get average time
+querySamples: 5
+
+# How long once repeat the query test? '-1' indicates only at final
+# values in seconds
+queryInterval: -1
+
+# where to send spans, options: http, udp
+# 'http' will send spans to 'collector'
+# 'udp' will send spans to 'agent'
+sender: http
+
+# storage type, options: elasticsearch, cassandra
+storageType: elasticsearch
+
+# Get spans on count from storage at the end of test
+# options: storage, jaeger-query
+# Type 'storage' will be used direct storage query api
+# Type 'jaeger-query' will be used jaeger query api
+spansCountFrom: jaeger-query
+
+# storage hostname and port number
+storageHost: localhost
+storagePort: 9200
+
+# storage keyspace, used in cassandra storage
+storageKeyspace: keyspace
+
+# jaeger query hostname and port number
+jaegerQueryHost: localhost
+jaegerQueryPort: 16686
+
+# jaeger collector hostname and port number
+jaegerCollectorHost: localhost
+jaegerCollectorPort: 14268
+
+# jaeger agent hostname and port number
+jaegerAgentHost: localhost
+jaegerAgentPort: 6831
+
+# jaeger client java library configurations
+jaegerFlushInterval: 100
+jaegerMaxPocketSize: 0
+jaegerMaxQueueSize: 10000
+
+# if the test is running on OpenShift environment,
+# where you want to store all the collected logs
+logsDirectory: logs/
+
+# Number of collector pods to be deployed
+# will be used on OpenShift environment
+collectorPods: 1
+collectorQueueSize: 2000
+collectorWorkersCount: 50
+
+# jaeger agent configurations
+# will be used on OpenShift environment
+jaegerAgentQueueSize: 1000
+jaegerAgentWorkers: 10
+
+# jaeger query static files location for jaeger query docker image
+# will be used on OpenShift environment
+queryStaticFiles: ''
+
+# elasticsearch configurations
+# will be used on OpenShift environment
+esMemory: 1Gi
+esBulkSize: 5000000
+esBulkWorkers: 1
+esBulkFlushInterval: 200ms
+
+# docker image details
+# will be used on OpenShift environment
+imageAgent:
+imageCollector:
+imageQuery:
+imageStorage:
+storageImageInSecure: false
+
+# docker image details for performance test,
+# this image includes: smoketest as well
+imagePerformanceTest: 

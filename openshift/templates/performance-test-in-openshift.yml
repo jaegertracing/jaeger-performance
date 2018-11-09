@@ -1,0 +1,137 @@
+#
+# Copyright 2018 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+apiVersion: v1
+kind: List
+items:
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: jaeger-performance-test-job
+    labels:
+      app: jaeger-performance-test-job
+      group: jaeger-performance-test
+  spec:
+    template:
+      metadata:
+        labels:
+          app: jaeger-performance-test-job
+          group: jaeger-performance-test
+      spec:
+        containers:
+        - image: ${JAEGER_AGENT_IMAGE}
+          args: ["--collector.host-port=${JAEGER_COLLECTOR_HOST}:14267",
+                 "--processor.jaeger-compact.server-queue-size=${JAEGER_AGENT_QUEUE_SIZE}",
+                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}"]
+          name: jaeger-agent
+          ports:
+          - containerPort: 6831
+            protocol: UDP
+        - image: ${PERFORMANCE_TEST_IMAGE}
+          imagePullPolicy: Always
+          name: jaeger-performance-test
+          ports:
+          - containerPort: 8080
+            name: http
+            protocol: TCP
+          securityContext:
+            privileged: false
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: RUNNING_ON_OPENSHIFT
+            value: "${RUNNING_ON_OPENSHIFT}"
+          - name: LOGS_DIRECTORY
+            value: "${LOGS_DIRECTORY}"
+          - name: TESTS_TO_RUN
+            value: "${TESTS_TO_RUN}"
+          - name: PERFORMANCE_TEST_DATA
+            value: "${PERFORMANCE_TEST_DATA}"
+          - name: NUMBER_OF_TRACERS
+            value: "${NUMBER_OF_TRACERS}"
+          - name: NUMBER_OF_SPANS
+            value: "${NUMBER_OF_SPANS}"
+          - name: QUERY_LIMIT
+            value: "${QUERY_LIMIT}"
+          - name: QUERY_SAMPLES
+            value: "${QUERY_SAMPLES}"
+          - name: QUERY_INTERVAL
+            value: "${QUERY_INTERVAL}"
+          - name: SENDER
+            value: "${SENDER}"
+          - name: STORAGE_TYPE
+            value: "${STORAGE_TYPE}"
+          - name: SPANS_COUNT_FROM
+            value: "${SPANS_COUNT_FROM}"
+          - name: STORAGE_HOST
+            value: "${STORAGE_HOST}"
+          - name: STORAGE_PORT
+            value: "${STORAGE_PORT}"
+          - name: STORAGE_KEYSPACE
+            value: "${STORAGE_KEYSPACE}"
+          - name: JAEGER_QUERY_HOST
+            value: "${JAEGER_QUERY_HOST}"
+          - name: JAEGER_QUERY_PORT
+            value: "${JAEGER_QUERY_PORT}"
+          - name: JAEGER_COLLECTOR_HOST
+            value: "${JAEGER_COLLECTOR_HOST}"
+          - name: JAEGER_COLLECTOR_PORT
+            value: "${JAEGER_COLLECTOR_PORT}"
+          - name: JAEGER_AGENT_HOST
+            value: "${JAEGER_AGENT_HOST}"
+          - name: JAEGER_AGENT_PORT
+            value: "${JAEGER_AGENT_PORT}"
+          - name: JAEGER_AGENT_QUEUE_SIZE
+            value: "${JAEGER_AGENT_QUEUE_SIZE}"
+          - name: JAEGER_AGENT_WORKERS
+            value: "${JAEGER_AGENT_WORKERS}"
+          - name: JAEGER_FLUSH_INTERVAL
+            value: "${JAEGER_FLUSH_INTERVAL}"
+          - name: JAEGER_MAX_POCKET_SIZE
+            value: "${JAEGER_MAX_POCKET_SIZE}"
+          - name: JAEGER_SAMPLING_RATE
+            value: "${JAEGER_SAMPLING_RATE}"
+          - name: JAEGER_MAX_QUEUE_SIZE
+            value: "${JAEGER_MAX_QUEUE_SIZE}"
+          - name: COLLECTOR_PODS
+            value: "${COLLECTOR_PODS}"
+          - name: COLLECTOR_QUEUE_SIZE
+            value: "${COLLECTOR_QUEUE_SIZE}"
+          - name: COLLECTOR_NUM_WORKERS
+            value: "${COLLECTOR_NUM_WORKERS}"
+          - name: QUERY_STATIC_FILES
+            value: "${QUERY_STATIC_FILES}"
+          - name: ES_MEMORY
+            value: "${ES_MEMORY}"
+          - name: ES_BULK_SIZE
+            value: "${ES_BULK_SIZE}"
+          - name: ES_BULK_WORKERS
+            value: "${ES_BULK_WORKERS}"
+          - name: ES_BULK_FLUSH_INTERVAL
+            value: "${ES_BULK_FLUSH_INTERVAL}"
+          - name: JAEGER_AGENT_IMAGE
+            value: "${JAEGER_AGENT_IMAGE}"
+          - name: JAEGER_COLLECTOR_IMAGE
+            value: "${JAEGER_COLLECTOR_IMAGE}"
+          - name: JAEGER_QUERY_IMAGE
+            value: "${JAEGER_QUERY_IMAGE}"
+          - name: ES_IMAGE
+            value: "${ES_IMAGE}"
+          - name: ES_IMAGE_INSECURE
+            value: "${ES_IMAGE_INSECURE}"
+          - name: PERFORMANCE_TEST_IMAGE
+            value: "${PERFORMANCE_TEST_IMAGE}"
+        restartPolicy: Never
