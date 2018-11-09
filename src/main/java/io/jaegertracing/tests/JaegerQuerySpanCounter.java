@@ -34,9 +34,6 @@ import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
-/**
- * @author Pavol Loffay
- */
 @Slf4j
 public class JaegerQuerySpanCounter extends UntilNoChangeCounter {
 

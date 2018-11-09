@@ -26,9 +26,6 @@ import io.opentracing.Span;
 import io.opentracing.tag.Tags;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author Pavol Loffay
- */
 @Slf4j
 public class CreateSpansRunnable implements Runnable {
 

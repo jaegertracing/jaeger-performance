@@ -22,9 +22,6 @@ import com.codahale.metrics.Timer;
 import io.jaegertracing.tests.report.ReportFactory;
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author Pavol Loffay
- */
 @Slf4j
 public abstract class UntilNoChangeCounter implements ISpanCounter {
 

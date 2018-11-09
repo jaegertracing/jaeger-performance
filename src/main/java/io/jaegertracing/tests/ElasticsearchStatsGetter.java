@@ -24,9 +24,6 @@ import org.elasticsearch.client.RestClient;
 
 import lombok.extern.slf4j.Slf4j;
 
-/**
- * @author Pavol Loffay
- */
 @Slf4j
 public class ElasticsearchStatsGetter implements Closeable {
 

@@ -13,9 +13,6 @@
  */
 package io.jaegertracing.tests.model;
 
-/**
- * @author Pavol Loffay
- */
 public class Span {
 
     private String operationName;
