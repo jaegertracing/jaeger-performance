@@ -20,6 +20,7 @@ pipeline {
 
         choice(choices: 'performance,smoke\nperformance\nsmoke',  name: 'TESTS_TO_RUN', description: 'Tests to run')
         string(name: 'PERFORMANCE_TEST_DATA', defaultValue: 'quick,165', description: 'Performance test data[type,data]: type can be:"quick" or "long", for "quick": delay in miliseconds, for "long": duration in seconds')
+        booleanParam(name: 'TEST_HA_SETUP', defaultValue: false, description: 'Execute HA setup. Kill es, collector pods')
         string(name: 'NUMBER_OF_TRACERS', defaultValue: '100', description: 'Number of tracers')
         string(name: 'NUMBER_OF_SPANS', defaultValue: '4000', description: 'Number of spans per tracer')
         string(name: 'QUERY_LIMIT', defaultValue: '20000', description: 'Maximum items limit on query execution')
@@ -166,6 +167,7 @@ pipeline {
                 sh '''
                     # logs will be stored in this location
                     export LOGS_DIRECTORY=$PWD/logs
+                    sleep 60  # wait sometime, to get other setup ready
                     ./openshift/scripts/run_performance_test.sh
                     sleep 30  # wait for 30 seconds to create container
                     # wait_for_pods_status.sh NAMESPACE POD_FILTER WAIT_FOR_STATUS MAX_WAIT_TIME
@@ -178,7 +180,11 @@ pipeline {
                         # if it is a qucik run define duration as 30 minutes maximum
                         _TEST_DURATION=1800
                     fi
-                    ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" `expr ${_TEST_DURATION} + 1800`
+                    if ${TEST_HA_SETUP};then
+                        ./openshift/scripts/wait_for_pods_status_with_ha.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" `expr ${_TEST_DURATION} + 1800`
+                    else
+                        ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" `expr ${_TEST_DURATION} + 1800`
+                    fi
                     # copy log files
                     ./openshift/scripts/copy-log-file.sh  ${OS_NAMESPACE} "app=jaeger-performance-test-job" "jaeger-performance-test"
                     ./openshift/scripts/copy-log-file.sh  ${OS_NAMESPACE} "app=jaeger-performance-test-job" "jaeger-agent"
