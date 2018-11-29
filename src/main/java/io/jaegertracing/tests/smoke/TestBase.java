@@ -127,7 +127,7 @@ public class TestBase {
     }
 
     public void waitForFlush() {
-        sleep(config.getJaegerFlushInterval() + 10L);
+        sleep(config.getJaegerFlushInterval() + 1000L);
     }
 
     public void sleep(long milliseconds) {

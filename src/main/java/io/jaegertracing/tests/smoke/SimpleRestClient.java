@@ -13,6 +13,8 @@
  */
 package io.jaegertracing.tests.smoke;
 
+import static org.awaitility.Awaitility.await;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.time.Instant;
@@ -34,9 +36,6 @@ import okhttp3.Response;
 
 @Slf4j
 public class SimpleRestClient implements Closeable {
-
-    // Limit for the number of retries when getting traces
-    private static final Integer RETRY_LIMIT = 10;
 
     TestConfig config = TestConfig.get();
     private ObjectMapper jsonObjectMapper = new ObjectMapper();
@@ -95,23 +94,18 @@ public class SimpleRestClient implements Closeable {
     public List<JsonNode> getTraces(final String parameters, final int expectedTraceCount) {
         waitForFlush();
         List<JsonNode> traces = new ArrayList<>();
-        int iterations = 0;
-        long sleepInterval = 1000;
-
-        // Retry for up to RETRY_LIMIT seconds to get the expected number of traces
-        // TODO make wait time an argument?
-        while (iterations < RETRY_LIMIT && traces.size() < expectedTraceCount) {
-            iterations++;
-            traces = getTraces(parameters);
-            if (traces.size() >= expectedTraceCount) {
-                return traces;
-            }
-            try {
-                Thread.sleep(sleepInterval);
-                sleepInterval += 100;
-            } catch (InterruptedException e) {
-                logger.warn("Sleep was interrupted", e);
-            }
+        try {
+            await().atMost(60, TimeUnit.SECONDS)
+                    .pollInterval(2, TimeUnit.SECONDS)
+                    .pollDelay(0, TimeUnit.SECONDS)
+                    .until(() -> {
+                        List<JsonNode> _traces = getTraces(parameters);
+                        logger.debug("Number of traces:{}, parameters:{}", _traces.size(), parameters);
+                        return (_traces.size() >= expectedTraceCount);
+                    });
+            return getTraces(parameters);
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
         }
 
         return traces;

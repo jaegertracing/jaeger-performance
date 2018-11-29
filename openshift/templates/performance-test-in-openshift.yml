@@ -31,7 +31,9 @@ items:
       spec:
         containers:
         - image: ${JAEGER_AGENT_IMAGE}
-          args: ["--collector.host-port=${JAEGER_COLLECTOR_HOST}:14267",
+          imagePullPolicy: Always
+          args: ["--reporter.type=${REPORTER_TYPE}",
+                 "--reporter.${REPORTER_TYPE}.host-port=${JAEGER_COLLECTOR_HOST}:${JAEGER_COLLECTOR_PORT_POD}",
                  "--processor.jaeger-compact.server-queue-size=${JAEGER_AGENT_QUEUE_SIZE}",
                  "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}"]
           name: jaeger-agent
@@ -134,4 +136,8 @@ items:
             value: "${ES_IMAGE_INSECURE}"
           - name: PERFORMANCE_TEST_IMAGE
             value: "${PERFORMANCE_TEST_IMAGE}"
+          - name: REPORTER_TYPE
+            value: "${REPORTER_TYPE}"
+          - name: JAEGER_COLLECTOR_PORT_POD
+            value: "${JAEGER_COLLECTOR_PORT_POD}"
         restartPolicy: Never
