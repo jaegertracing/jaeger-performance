@@ -34,12 +34,22 @@ PODS=`oc get pods -n ${OS_NAMESPACE} --no-headers -l app=jaeger | awk '{print $1
 
 PODS_LIST=$(echo ${PODS} | tr " " "\n")
 for _pod in ${PODS_LIST}; do
-  echo "INFO: Copying log file from ${_pod}"
+  _pod_ip=$(oc get pod ${_pod} --template={{.status.podIP}})
+  echo "INFO: Copying log file from ${_pod}, IP:${_pod_ip}"
   if [[ ${_pod} = *"query"* ]]; then
     oc logs ${_pod} -c "jaeger-query" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-query.log
     oc logs ${_pod} -c "jaeger-agent" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-agent.log
+    # prometheus metrics - query
+    curl http://${_pod_ip}:16686/metrics --output logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-query.txt
+    prom2json http://${_pod_ip}:16686/metrics > logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-query.json
+    # prometheus metrics - agent
+    curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-agent.txt
+    # prom2json http://${_pod_ip}:5778/metrics > logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-agent.json
   else
     oc logs ${_pod} -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}.log
+    # prometheus metrics - collector
+    curl http://${_pod_ip}:14268/metrics --output logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-collector.txt
+    prom2json http://${_pod_ip}:14268/metrics > logs/${OS_NAMESPACE}_${_pod}_prometheus-metrics-collector.json
   fi
 done
 

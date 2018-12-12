@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.junit.AssumptionViolatedException;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestRule;
@@ -54,8 +55,24 @@ public class TestBase {
 
     @Rule
     public TestRule watcher = new TestWatcher() {
+        protected void failed(Throwable ex, Description description) {
+            logger.info("*** Test[FAILED]: {} ***", ex, description.getMethodName());
+        }
+
+        protected void finished(Description description) {
+            logger.info("*** Test[FINISHED]: {} ***", description.getMethodName());
+        }
+
+        protected void skipped(AssumptionViolatedException ex, Description description) {
+            logger.info("*** Test[SKIPPED]: {} ***", ex, description.getMethodName());
+        }
+
         protected void starting(Description description) {
-            logger.debug("Starting test: ****** {} ****** ", description.getMethodName());
+            logger.info("*** Test[STARTING]: {} ***", description.getMethodName());
+        }
+
+        protected void succeeded(Description description) {
+            logger.info("*** Test[SUCCEEDED]: {} ***", description.getMethodName());
         }
     };
 
@@ -110,7 +127,7 @@ public class TestBase {
     }
 
     public void waitForFlush() {
-        sleep(config.getJaegerFlushInterval() + 10L);
+        sleep(config.getJaegerFlushInterval() + 1000L);
     }
 
     public void sleep(long milliseconds) {

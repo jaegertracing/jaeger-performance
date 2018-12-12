@@ -17,6 +17,13 @@ set -x
 # download config map from master branch
 cp openshift/templates/performance-test-in-openshift.yml performance-test-in-openshift.yml
 
+# update tchannel, grpc port. http:14268, tchannel:14267, grpc:14250
+if [ ${REPORTER_TYPE} == 'grpc' ]; then
+    export JAEGER_COLLECTOR_PORT_POD="14250"
+else
+    export JAEGER_COLLECTOR_PORT_POD="14267"
+fi
+
 # update environment variables
 sed -i 's;${RUNNING_ON_OPENSHIFT};'${RUNNING_ON_OPENSHIFT}';g' performance-test-in-openshift.yml
 sed -i 's;${TESTS_TO_RUN};'${TESTS_TO_RUN}';g' performance-test-in-openshift.yml
@@ -58,6 +65,12 @@ sed -i 's;${STORAGE_IMAGE_INSECURE};'${STORAGE_IMAGE_INSECURE}';g' performance-t
 sed -i 's;${PERFORMANCE_TEST_IMAGE};'${PERFORMANCE_TEST_IMAGE}';g' performance-test-in-openshift.yml
 sed -i 's;${JAEGER_AGENT_QUEUE_SIZE};'${JAEGER_AGENT_QUEUE_SIZE}';g' performance-test-in-openshift.yml
 sed -i 's;${JAEGER_AGENT_WORKERS};'${JAEGER_AGENT_WORKERS}';g' performance-test-in-openshift.yml
+sed -i 's;${REPORTER_TYPE};'${REPORTER_TYPE}';g' performance-test-in-openshift.yml
+sed -i 's;${JAEGER_COLLECTOR_PORT_POD};'${JAEGER_COLLECTOR_PORT_POD}';g' performance-test-in-openshift.yml
 
 # deploy jaeger performance test
 oc create -n ${OS_NAMESPACE} -f performance-test-in-openshift.yml
+
+# move configmap file to logs directory
+mkdir -p logs
+mv performance-test-in-openshift.yml logs/
