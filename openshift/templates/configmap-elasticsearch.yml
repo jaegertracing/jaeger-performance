@@ -28,7 +28,7 @@ data:
       zipkin:
         http-port: 9411
     es:
-      server-urls: http://elasticsearch:9200
+      server-urls: http://${STORAGE_HOST}:${STORAGE_PORT}
       bulk:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
@@ -38,7 +38,7 @@ data:
       static-files: ${QUERY_STATIC_FILES}
       port: 16686
     es:
-      server-urls: http://elasticsearch:9200
+      server-urls: http://${STORAGE_HOST}:${STORAGE_PORT}
       bulk:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
