@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -20,6 +20,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -187,6 +188,28 @@ public class Main {
 
     private void triggerCreateSpans() throws Exception {
         logger.debug("{}", config);
+
+        // TODO: run query
+        if (!config.getUseInternalReporter()) {
+            long waitTime = config.getSpansReportDurationInMillisecond();
+            // trigger external spans reporter
+            JaegerQEControllerClient qeClient = new JaegerQEControllerClient(config.getJaegerqeControllerUrl());
+
+            HashMap<String, Object> data = config.getMap();
+            data.put("tracerName", TRACER_PREFIX);
+            data.put("serviceName", SERVICE_NAME);
+            data.put("jobId", UUID.randomUUID().toString());
+            data.put("useHostname", false);
+
+            data.put("startTime", "15s");
+            waitTime += 20000L;
+
+            qeClient.startSpansReporter(data);
+            logger.info("Waiting to complte spans report. Wait time:{} ms", waitTime);
+            Thread.sleep(waitTime);
+            return;
+        }
+
         Timer reportingTimer = ReportFactory.timer("report-spans");
 
         if (config.isPerformanceTestEnabled() && config.isPerformanceTestQuickRunEnabled()) {

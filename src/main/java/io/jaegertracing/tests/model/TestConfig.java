@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,6 +18,8 @@ import static io.jaegertracing.tests.TestUtils.getIntegerEnv;
 import static io.jaegertracing.tests.TestUtils.getStringEnv;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
 
 import org.apache.commons.io.FileUtils;
 
@@ -37,7 +39,12 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @ToString
 @Slf4j
-public class TestConfig {
+public class TestConfig implements Serializable {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 6130562311305075882L;
 
     public static TestConfig loadFromEnvironment() {
         return TestConfig
@@ -83,6 +90,9 @@ public class TestConfig {
                         getStringEnv("PERFORMANCE_TEST_IMAGE", "jkandasa/jaeger-performance-test:latest"))
                 .jaegerAgentQueueSize(getIntegerEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
                 .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
+                .jaegerqeControllerUrl(getStringEnv("JAEGERQE_CONTROLLER_URL", "http://localhost:8080"))
+                .useInternalReporter(getBooleanEnv("USE_INTERNAL_REPORTER", "true"))
+                .spansReportDuration(getStringEnv("REPORT_SPANS_DURATION", "10m"))
                 .build();
     }
 
@@ -105,6 +115,10 @@ public class TestConfig {
         }
         return loadFromEnvironment();
     }
+
+    private String jaegerqeControllerUrl;
+    private Boolean useInternalReporter;
+    private String spansReportDuration;
 
     // general data
     private String testsToRun;
@@ -230,5 +244,39 @@ public class TestConfig {
             return -1;
         }
         return getPerformanceTestSpanDelayOrDuration().intValue();
+    }
+
+    public Long getSpansReportDurationInMillisecond() {
+        Long number = Long.valueOf(spansReportDuration.replaceAll("[^0-9]", ""));
+        Long timestamp = null;
+        if (spansReportDuration.endsWith("s")) {
+            timestamp = number * 1000L;
+        } else if (spansReportDuration.endsWith("m")) {
+            timestamp = number * 1000L * 60;
+        } else if (spansReportDuration.endsWith("h")) {
+            timestamp = number * 1000L * 60 * 60;
+        } else if (spansReportDuration.endsWith("d")) {
+            timestamp = number * 1000L * 60 * 60 * 24;
+        } else {
+            timestamp = number;
+        }
+        return timestamp;
+    }
+
+    public HashMap<String, Object> getMap() {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("spansCount", spansCount);
+        data.put("tracersCount", tracersCount);
+        data.put("sender", sender);
+        data.put("jaegerCollectorHost", jaegerCollectorHost);
+        data.put("jaegerCollectorPort", jaegerCollectorPort);
+        data.put("jaegerAgentHost", jaegerAgentHost);
+        data.put("jaegerAgentPort", jaegerAgentPort);
+        data.put("jaegerSamplingRate", 1.0);
+        data.put("jaegerFlushInterval", jaegerFlushInterval);
+        data.put("jaegerMaxPocketSize", jaegerMaxPocketSize);
+        data.put("jaegerMaxQueueSize", jaegerMaxQueueSize);
+        data.put("endTime", spansReportDuration);
+        return data;
     }
 }

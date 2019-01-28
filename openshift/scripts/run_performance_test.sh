@@ -1,5 +1,5 @@
 #
-# Copyright 2018 The Jaeger Authors
+# Copyright 2018-2019 The Jaeger Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -67,6 +67,9 @@ sed -i 's;${JAEGER_AGENT_QUEUE_SIZE};'${JAEGER_AGENT_QUEUE_SIZE}';g' performance
 sed -i 's;${JAEGER_AGENT_WORKERS};'${JAEGER_AGENT_WORKERS}';g' performance-test-in-openshift.yml
 sed -i 's;${REPORTER_TYPE};'${REPORTER_TYPE}';g' performance-test-in-openshift.yml
 sed -i 's;${JAEGER_COLLECTOR_PORT_POD};'${JAEGER_COLLECTOR_PORT_POD}';g' performance-test-in-openshift.yml
+sed -i 's;${JAEGERQE_CONTROLLER_URL};'${JAEGERQE_CONTROLLER_URL}';g' performance-test-in-openshift.yml
+sed -i 's;${USE_INTERNAL_REPORTER};'${USE_INTERNAL_REPORTER}';g' performance-test-in-openshift.yml
+sed -i 's;${REPORT_SPANS_DURATION};'${REPORT_SPANS_DURATION}';g' performance-test-in-openshift.yml
 
 # deploy jaeger performance test
 oc create -n ${OS_NAMESPACE} -f performance-test-in-openshift.yml

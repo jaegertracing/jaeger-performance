@@ -18,11 +18,23 @@ pipeline {
         string(name: 'OS_NAMESPACE', defaultValue: 'jaeger-test2', description: 'Openshift namespace')
         booleanParam(name: 'INSTALL_JAEGER_SERVICES', defaultValue: true, description: 'Install Jaeger services')
 
+        string(name: 'JAEGERQE_CONTROLLER_URL', defaultValue: 'http://localhost:8080', description: 'JaegerQE controller URL')
+
         string(name: 'TESTS_TO_RUN', defaultValue: 'performance,smoke', description: 'Tests to run: performance,smoke')
         string(name: 'PERFORMANCE_TEST_DATA', defaultValue: 'quick,165', description: 'Performance test data[type,data]: type can be:"quick" or "long", for "quick": delay in miliseconds, for "long": duration in seconds')
         booleanParam(name: 'TEST_HA_SETUP', defaultValue: false, description: 'Execute HA setup. Kill es, collector pods')
+        
         string(name: 'NUMBER_OF_TRACERS', defaultValue: '100', description: 'Number of tracers')
         string(name: 'NUMBER_OF_SPANS', defaultValue: '4000', description: 'Number of spans per tracer')
+        booleanParam(name: 'USE_INTERNAL_REPORTER', defaultValue: true, description: 'If you like to use internal spans reporter, check this box')
+        booleanParam(name: 'DEPLOY_REPORTER', defaultValue: false, description: 'If you like to deploy spans reporter, check this box')
+        string(name: 'REPORT_SPANS_DURATION', defaultValue: '10m', description: 'How long want to report spans? eg: 50s, 10m, 2h, 2d. s-second, m-minute, h-hour, d-day')
+        string(name: 'REPORTER_REPLICA_COUNT', defaultValue: '5', description: 'Reporters replica count')
+        string(name: 'MSG_BROKER_HOST', defaultValue: 'localhost', description: 'Hostname or ip of the message queue broker host')
+        string(name: 'MSG_BROKER_PORT', defaultValue: '1883', description: 'Message queue broker port')
+        string(name: 'MSG_BROKER_USER', defaultValue: 'guest', description: 'Message queue broker username')
+        password(name: 'MSG_BROKER_PASSWORD', defaultValue: 'guest', description: 'Message queue broker password')
+
         string(name: 'QUERY_LIMIT', defaultValue: '20000', description: 'Maximum items limit on query execution')
         string(name: 'QUERY_SAMPLES', defaultValue: '5', description: 'Number of times the same should be executed')
         string(name: 'QUERY_INTERVAL', defaultValue: '-1', description: 'Query sets will be executed in this interval. If you want to only once at the end, pass it as -1')
@@ -68,7 +80,8 @@ pipeline {
         string(name: 'PERFORMANCE_TEST_IMAGE', defaultValue: 'jkandasa/jaeger-performance-test:2.0.0', description: 'Jaeger performance test docker image')
 
         booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
-        booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')      
+        booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')
+        booleanParam(name: 'DELETE_REPORTER_AT_END', defaultValue: false, description: 'Delete spans reporter pods at end of the test')
     }
     stages {
         stage('Update default values') {
@@ -109,7 +122,28 @@ pipeline {
             steps {
                 deleteDir()
                 checkout scm
+                sh 'mkdir -p logs/'
                 sh 'ls -alF'
+            }
+        }
+        stage('Deploy jaeger spans reporter') {
+            when {
+                expression { !params.USE_INTERNAL_REPORTER && params.DEPLOY_REPORTER }
+            }
+            steps {
+                sh '''
+                    oc delete job,template,pod,deployment -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}
+                    curl https://raw.githubusercontent.com/Kiali-QE/jaegerspans-reporter/master/openshift-template.yml --output jaeger_spans_reporter.yml
+                    oc process -f jaeger_spans_reporter.yml             \
+                        -p=MQTT_BROKER_HOST=${MSG_BROKER_HOST}          \
+                        -p=MQTT_BROKER_PORT=${MSG_BROKER_PORT}          \
+                        -p=MQTT_BROKER_USER=${MSG_BROKER_USER}          \
+                        -p=MQTT_BROKER_PASSWORD=${MSG_BROKER_PASSWORD}  \
+                        -p=REPLICA_COUNT=${REPORTER_REPLICA_COUNT}  > jaeger_spans_reporter_update.yml
+                    oc create --filename jaeger_spans_reporter_update.yml -n ${OS_NAMESPACE}
+                    mv jaeger_spans_reporter_update.yml logs/
+                    rm jaeger_spans_reporter.yml
+                '''
             }
         }
         stage('deploy Cassandra') {
@@ -225,6 +259,14 @@ pipeline {
             steps {
                 sh 'oc delete job,template,pod -l group=jaeger-performance-test -n ${OS_NAMESPACE}'
                 sh 'oc delete job jaeger-standalone-performance-tests -n ${OS_NAMESPACE} || true'
+            }
+        }
+        stage('Delete jaeger spans reporter at the end') {
+            when {
+                expression { params.DELETE_REPORTER_AT_END  }
+            }
+            steps {
+                sh 'oc delete job,template,pod,deployment -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}'
             }
         }
     }
