@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -52,6 +52,7 @@ public class ElasticsearchStatsGetter implements Closeable {
             Response nodeCat = restClient.performRequest("GET", NODES);
             // https://www.elastic.co/guide/en/elasticsearch/reference/6.3/cat-thread-pool.html
             Response threadPool = restClient.performRequest("GET", THREAD_POOL);
+
             logger.debug("{} --> {}",
                     nodeCat.getRequestLine().getUri(), EntityUtils.toString(nodeCat.getEntity()));
             logger.debug("{} --> {}",

@@ -33,6 +33,7 @@ data:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
         flush-interval: ${ES_BULK_FLUSH_INTERVAL}
+    metrics-backend: ${METRICS_BACKEND}
   query: |
     query:
       static-files: ${QUERY_STATIC_FILES}
@@ -43,4 +44,6 @@ data:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
         flush-interval: ${ES_BULK_FLUSH_INTERVAL}
-
+    metrics-backend: ${METRICS_BACKEND}
+  agent: |
+    metrics-backend: ${METRICS_BACKEND}

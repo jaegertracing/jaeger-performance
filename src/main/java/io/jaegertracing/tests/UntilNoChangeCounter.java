@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -12,8 +12,6 @@
  * the License.
  */
 package io.jaegertracing.tests;
-
-import static org.awaitility.Awaitility.await;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,6 +26,9 @@ public abstract class UntilNoChangeCounter implements ISpanCounter {
     private Timer queryTimer;
     private Timer queryUntilNoChangeTimer;
 
+    private static final int MAX_ITERATION = 3;
+    private static final long ITERATION_DELAY = 5 * 1000L;
+
     public UntilNoChangeCounter() {
         this.queryTimer = ReportFactory.timer("until-no-change-single-span-counter");
         this.queryUntilNoChangeTimer = ReportFactory.timer("until-no-change-span-counter");
@@ -36,26 +37,32 @@ public abstract class UntilNoChangeCounter implements ISpanCounter {
     @Override
     public int countUntilNoChange(int expected) {
         long startUntilNoChange = System.currentTimeMillis();
+        int spansCountOld = 0;
+        int spansCountFinal = 0;
 
         try {
-            await().atMost(30, TimeUnit.SECONDS)
-                    .pollInterval(5, TimeUnit.SECONDS)
-                    .pollDelay(0, TimeUnit.SECONDS)
-                    .until(() -> {
-                        long start = System.currentTimeMillis();
-                        int spansCount = count();
-                        long duration = System.currentTimeMillis() - start;
-                        queryTimer.update(duration, TimeUnit.MILLISECONDS);
-                        logger.debug("Count took: {}s, spans status[returned:{}, expected:{}]",
-                                TimeUnit.MILLISECONDS.toSeconds(duration), spansCount, expected);
-                        return expected <= spansCount;
-                    });
+            int iteration = 1;
+            while (iteration <= MAX_ITERATION) {
+                long start = System.currentTimeMillis();
+                spansCountFinal = count();
+                long duration = System.currentTimeMillis() - start;
+                queryTimer.update(duration, TimeUnit.MILLISECONDS);
+                logger.debug("Count took: {}s, spans status[returned:{}, expected:{}]",
+                        TimeUnit.MILLISECONDS.toSeconds(duration), spansCountFinal, expected);
+                if (spansCountOld != spansCountFinal) {
+                    iteration = 1;
+                    spansCountOld = spansCountFinal;
+                } else if (expected <= spansCountFinal) {
+                    break;
+                } else {
+                    iteration++;
+                }
+                Thread.sleep(ITERATION_DELAY);
+            }
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         }
-        logger.debug("Completed await loop. Now getting the final count.");
-        int count = count();
         queryUntilNoChangeTimer.update(System.currentTimeMillis() - startUntilNoChange, TimeUnit.MILLISECONDS);
-        return count;
+        return spansCountFinal;
     }
 }

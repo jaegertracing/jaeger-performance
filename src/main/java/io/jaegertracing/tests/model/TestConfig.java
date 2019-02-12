@@ -23,6 +23,7 @@ import java.util.HashMap;
 
 import org.apache.commons.io.FileUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -50,7 +51,6 @@ public class TestConfig implements Serializable {
         return TestConfig
                 .builder()
                 .testsToRun(getStringEnv("TESTS_TO_RUN", "performance,smoke"))
-                .performanceTestData(getStringEnv("PERFORMANCE_TEST_DATA", "quick,50"))
                 .tracersCount(getIntegerEnv("NUMBER_OF_TRACERS", "50"))
                 .spansCount(getIntegerEnv("NUMBER_OF_SPANS", "10000"))
                 .runningOnOpenshift(getBooleanEnv("RUNNING_ON_OPENSHIFT", "false"))
@@ -91,8 +91,13 @@ public class TestConfig implements Serializable {
                 .jaegerAgentQueueSize(getIntegerEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
                 .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
                 .jaegerqeControllerUrl(getStringEnv("JAEGERQE_CONTROLLER_URL", "http://localhost:8080"))
+                .reportEngineUrl(getStringEnv("REPORT_ENGINE_URL", "http://localhost:8080"))
+                .reportEngineLabel(getStringEnv("REPORT_ENGINE_LABEL", "{}"))
                 .useInternalReporter(getBooleanEnv("USE_INTERNAL_REPORTER", "true"))
                 .spansReportDuration(getStringEnv("REPORT_SPANS_DURATION", "10m"))
+                .reporterReplicaCount(getIntegerEnv("REPORTER_REPLICA_COUNT", "5"))
+                .reporterHostCount(getIntegerEnv("HOST_COUNT_REPORTER", "-1"))
+                .queryHostCount(getIntegerEnv("HOST_COUNT_QUERY", "-1"))
                 .build();
     }
 
@@ -116,13 +121,21 @@ public class TestConfig implements Serializable {
         return loadFromEnvironment();
     }
 
+    private String reportEngineUrl;
+    private String reportEngineLabel;
+
+    private Jenkins jenkins;
+
     private String jaegerqeControllerUrl;
     private Boolean useInternalReporter;
+    private Integer reporterReplicaCount;
     private String spansReportDuration;
+
+    private Integer reporterHostCount;
+    private Integer queryHostCount;
 
     // general data
     private String testsToRun;
-    private String performanceTestData;
     private Integer tracersCount;
     private Integer spansCount;
 
@@ -207,45 +220,6 @@ public class TestConfig implements Serializable {
         return false;
     }
 
-    public boolean isPerformanceTestQuickRunEnabled() {
-        if (performanceTestData.toLowerCase().startsWith("quick")) {
-            return true;
-        }
-        return false;
-    }
-
-    public boolean isPerformanceTestLongRunEnabled() {
-        return !isPerformanceTestQuickRunEnabled();
-    }
-
-    private Long getPerformanceTestSpanDelayOrDuration() {
-        String[] data = performanceTestData.split(",");
-        try {
-            if (data.length == 2) {
-                return Long.valueOf(data[1].trim());
-            } else {
-                throw new RuntimeException("Invalid performancte test data: " + performanceTestData);
-            }
-        } catch (Exception ex) {
-            logger.error("Exception,", ex);
-            throw new RuntimeException("Exception:" + ex.getMessage());
-        }
-    }
-
-    public Long getPerformanceTestSpanDelay() {
-        if (isPerformanceTestLongRunEnabled()) {
-            return -1L;
-        }
-        return getPerformanceTestSpanDelayOrDuration();
-    }
-
-    public Integer getPerformanceTestDuration() {
-        if (isPerformanceTestQuickRunEnabled()) {
-            return -1;
-        }
-        return getPerformanceTestSpanDelayOrDuration().intValue();
-    }
-
     public Long getSpansReportDurationInMillisecond() {
         Long number = Long.valueOf(spansReportDuration.replaceAll("[^0-9]", ""));
         Long timestamp = null;
@@ -263,6 +237,18 @@ public class TestConfig implements Serializable {
         return timestamp;
     }
 
+    public int getSpansReportDurationInSecond() {
+        return (int) (getSpansReportDurationInMillisecond() / 1000L);
+    }
+
+    public Jenkins getJenkins() {
+        if (jenkins == null) {
+            jenkins = new Jenkins();
+        }
+        return jenkins;
+    }
+
+    @JsonIgnore
     public HashMap<String, Object> getMap() {
         HashMap<String, Object> data = new HashMap<>();
         data.put("spansCount", spansCount);
@@ -277,6 +263,14 @@ public class TestConfig implements Serializable {
         data.put("jaegerMaxPocketSize", jaegerMaxPocketSize);
         data.put("jaegerMaxQueueSize", jaegerMaxQueueSize);
         data.put("endTime", spansReportDuration);
+        data.put("jaegerQueryHost", jaegerQueryHost);
+        data.put("jaegerQueryPort", jaegerQueryPort);
+        data.put("jaegerQueryLimit", queryLimit);
+        data.put("jaegerQuerySamples", querySamples);
+        data.put("jaegerQueryInterval", queryInterval);
+        data.put("reportEngineUrl", reportEngineUrl);
+        data.put("queryHostCount", queryHostCount);
+        data.put("reporterHostCount", reporterHostCount);
         return data;
     }
 }

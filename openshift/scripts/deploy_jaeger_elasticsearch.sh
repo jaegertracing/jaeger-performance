@@ -34,6 +34,8 @@ sed -i 's;${ES_BULK_WORKERS};'${ES_BULK_WORKERS}';g' configmap-elasticsearch.yml
 sed -i 's;${ES_BULK_FLUSH_INTERVAL};'${ES_BULK_FLUSH_INTERVAL}';g' configmap-elasticsearch.yml
 sed -i 's;${STORAGE_HOST};'${STORAGE_HOST}';g' configmap-elasticsearch.yml
 sed -i 's;${STORAGE_PORT};'${STORAGE_PORT}';g' configmap-elasticsearch.yml
+sed -i 's;${METRICS_BACKEND};'${METRICS_BACKEND}';g' configmap-elasticsearch.yml
+
 if [ ${#QUERY_STATIC_FILES} -gt 0 ]
 then
     sed -i 's;${QUERY_STATIC_FILES};'${QUERY_STATIC_FILES}';g' configmap-elasticsearch.yml

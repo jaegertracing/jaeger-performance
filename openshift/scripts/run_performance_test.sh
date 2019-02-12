@@ -70,6 +70,12 @@ sed -i 's;${JAEGER_COLLECTOR_PORT_POD};'${JAEGER_COLLECTOR_PORT_POD}';g' perform
 sed -i 's;${JAEGERQE_CONTROLLER_URL};'${JAEGERQE_CONTROLLER_URL}';g' performance-test-in-openshift.yml
 sed -i 's;${USE_INTERNAL_REPORTER};'${USE_INTERNAL_REPORTER}';g' performance-test-in-openshift.yml
 sed -i 's;${REPORT_SPANS_DURATION};'${REPORT_SPANS_DURATION}';g' performance-test-in-openshift.yml
+sed -i 's;${REPORTER_REPLICA_COUNT};'${REPORTER_REPLICA_COUNT}';g' performance-test-in-openshift.yml
+sed -i 's;${METRICS_BACKEND};'${METRICS_BACKEND}';g' performance-test-in-openshift.yml
+sed -i 's;${REPORT_ENGINE_URL};'${REPORT_ENGINE_URL}';g' performance-test-in-openshift.yml
+sed -i 's;${HOST_COUNT_REPORTER};'${HOST_COUNT_REPORTER}';g' performance-test-in-openshift.yml
+sed -i 's;${HOST_COUNT_QUERY};'${HOST_COUNT_QUERY}';g' performance-test-in-openshift.yml
+sed -i 's;${REPORTER_REFERENCE};'${REPORTER_REFERENCE}';g' performance-test-in-openshift.yml
 
 # deploy jaeger performance test
 oc create -n ${OS_NAMESPACE} -f performance-test-in-openshift.yml

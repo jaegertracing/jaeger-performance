@@ -35,7 +35,8 @@ items:
           args: ["--reporter.type=${REPORTER_TYPE}",
                  "--reporter.${REPORTER_TYPE}.host-port=${JAEGER_COLLECTOR_HOST}:${JAEGER_COLLECTOR_PORT_POD}",
                  "--processor.jaeger-compact.server-queue-size=${JAEGER_AGENT_QUEUE_SIZE}",
-                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}"]
+                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}",
+                 "--metrics-backend=${METRICS_BACKEND}"]
           name: jaeger-agent
           ports:
           - containerPort: 6831
@@ -146,4 +147,16 @@ items:
             value: "${USE_INTERNAL_REPORTER}"
           - name: REPORT_SPANS_DURATION
             value: "${REPORT_SPANS_DURATION}"
+          - name: REPORTER_REPLICA_COUNT
+            value: "${REPORTER_REPLICA_COUNT}"
+          - name: METRICS_BACKEND
+            value: "${METRICS_BACKEND}"
+          - name: REPORT_ENGINE_URL
+            value: "${REPORT_ENGINE_URL}"
+          - name: HOST_COUNT_REPORTER
+            value: "${HOST_COUNT_REPORTER}"
+          - name: HOST_COUNT_QUERY
+            value: "${HOST_COUNT_QUERY}"
+          - name: REPORTER_REFERENCE
+            value: "${REPORTER_REFERENCE}"
         restartPolicy: Never
