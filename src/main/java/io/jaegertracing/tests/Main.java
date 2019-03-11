@@ -82,11 +82,11 @@ public class Main {
         }
 
         if (config.getUseInternalReporter()) {
-            expectedSpansCountByReporter = config.getTracersCount() * config.getSpansCount()
+            expectedSpansCountByReporter = config.getNumberOfTracers() * config.getNumberOfSpans()
                     * config.getSpansReportDurationInSecond();
         } else {
-            expectedSpansCountByReporter = config.getReporterHostCount() * config.getTracersCount()
-                    * config.getSpansCount() * (config.getSpansReportDurationInSecond());
+            expectedSpansCountByReporter = config.getNodeCountSpansReporter() * config.getNumberOfTracers()
+                    * config.getNumberOfSpans() * (config.getSpansReportDurationInSecond());
         }
         ReportFactory.updateSpansCountByReporter(expectedSpansCountByReporter);
 
@@ -139,7 +139,7 @@ public class Main {
             sender = new UdpSender(
                     config.getJaegerAgentHost(),
                     config.getJaegerAgentPort(),
-                    config.getJaegerMaxPocketSize());
+                    config.getJaegerClientMaxPocketsize());
             logger.info("Using UDP sender, sending to: {}:{}",
                     config.getJaegerAgentHost(), config.getJaegerAgentPort());
         } else {
@@ -150,12 +150,12 @@ public class Main {
             sender = new HttpSender.Builder(httpEndpoint).build();
         }
 
-        logger.info("Flush interval {}, queue size {}", config.getJaegerFlushInterval(),
-                config.getJaegerMaxQueueSize());
+        logger.info("Flush interval {}, queue size {}", config.getJaegerClientFlushInterval(),
+                config.getJaegerClientMaxQueueSize());
         RemoteReporter reporter = new RemoteReporter.Builder()
                 .withSender(sender)
-                .withMaxQueueSize(config.getJaegerMaxQueueSize())
-                .withFlushInterval(config.getJaegerFlushInterval())
+                .withMaxQueueSize(config.getJaegerClientMaxQueueSize())
+                .withFlushInterval(config.getJaegerClientFlushInterval())
                 .build();
 
         return new JaegerTracer.Builder(serviceName)
@@ -167,11 +167,7 @@ public class Main {
     private ISpanCounter getSpanCounter(Set<String> serviceNames) {
         ISpanCounter spanCounter;
         if (config.getSpansCountFrom().equalsIgnoreCase("storage")) {
-            if ("elasticsearch".equals(config.getStorageType())) {
-                spanCounter = new ElasticsearchSpanCounter(config);
-            } else {
-                spanCounter = new CassandraSpanCounter(config);
-            }
+            spanCounter = new ElasticsearchSpanCounter(config);
         } else {
             spanCounter = new JaegerQuerySpanCounter(config, serviceNames, false);
         }
@@ -190,7 +186,7 @@ public class Main {
             data.put("jobId", UUID.randomUUID().toString());
             data.put("useHostname", false);
             data.put("reportEngineSuiteId", ReportFactory.getReSuiteId());
-            data.put("reference", ReportFactory.getReporterReference());
+            data.put("reporterReference", ReportFactory.getReporterReference());
 
             data.put("startTime", System.currentTimeMillis() + (15 * 1000L)); // 15 seconds from now
             waitTime += 20000L;
@@ -227,10 +223,10 @@ public class Main {
 
         long startTime = System.currentTimeMillis();
         // + 1, for query interval execution
-        ExecutorService executor = Executors.newFixedThreadPool(config.getTracersCount() + 1);
-        List<Future<?>> futures = new ArrayList<>(config.getTracersCount());
+        ExecutorService executor = Executors.newFixedThreadPool(config.getNumberOfTracers() + 1);
+        List<Future<?>> futures = new ArrayList<>(config.getNumberOfTracers());
         Set<String> serviceNames = new LinkedHashSet<>();
-        for (int tracerNumber = 1; tracerNumber <= config.getTracersCount(); tracerNumber++) {
+        for (int tracerNumber = 1; tracerNumber <= config.getNumberOfTracers(); tracerNumber++) {
             String name = TRACER_PREFIX + tracerNumber;
             JaegerTracer tracer = createJaegerTracer(SERVICE_NAME + "-" + name);
             serviceNames.add(tracer.getServiceName());
@@ -255,11 +251,12 @@ public class Main {
         reportingTimer.update(duration, TimeUnit.MILLISECONDS);
         logger.info("Finished sending spans to jaeger-{}. Spans sent:{}, timetaken:{}",
                 config.getSender().equalsIgnoreCase("http") ? "collector(http)" : "agent(udp)",
-                config.getTracersCount() * config.getSpansCount(), TimeUnit.MILLISECONDS.toSeconds(duration));
+                config.getNumberOfTracers() * config.getNumberOfSpans(), TimeUnit.MILLISECONDS.toSeconds(duration));
         ISpanCounter spanCounter = getSpanCounter(serviceNames);
         startTime = System.currentTimeMillis();
         int spansCount = spanCounter.countUntilNoChange((int) ReportFactory.getSpansSent());
         duration = System.currentTimeMillis() - startTime;
+        ReportFactory.updateSpansLatency(duration);
         ReportFactory.updateSpansCount(expectedSpansCountByReporter, spansCount);
         logger.info("Exceuted spans count. timetaken:{}, spans[expected:{}, actual:{}]",
                 TimeUnit.MILLISECONDS.toSeconds(duration), (int) ReportFactory.getSpansSent(), spansCount);
@@ -268,17 +265,18 @@ public class Main {
                 new ArrayList<>(serviceNames).get(0), TRACER_PREFIX + 1);
         jaegerQuery.execute("FINAL_");
 
-        if (config.getStorageType().equalsIgnoreCase("elasticsearch")) {
-            ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
-                    config.getStorageHost(), config.getStoragePort());
-            esStatsGetter.printStats();
-            esStatsGetter.close();
-        }
+        // elasticsearch storage stats
+        ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
+                config.getStorageHost(), config.getStoragePort());
+        esStatsGetter.printStats();
+        esStatsGetter.close();
+
         spanCounter.close();
         jaegerQuery.close();
     }
 
     private void spansCount() {
+        long startTimestamp = System.currentTimeMillis();
         try {
             ISpanCounter spanCounter = getSpanCounter(null);
             long startTime = System.currentTimeMillis();
@@ -288,16 +286,17 @@ public class Main {
             logger.info("Exceuted spans count. timetaken:{}, spans[expected:{}, actual:{}]",
                     TimeUnit.MILLISECONDS.toSeconds(duration), (int) ReportFactory.getSpansSent(), spansCount);
 
-            if (config.getStorageType().equalsIgnoreCase("elasticsearch")) {
-                ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
-                        config.getStorageHost(), config.getStoragePort());
-                esStatsGetter.printStats();
+            // elasticsearch storage 
+            ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
+                    config.getStorageHost(), config.getStoragePort());
+            esStatsGetter.printStats();
 
-                esStatsGetter.close();
-                spanCounter.close();
-            }
+            esStatsGetter.close();
+            spanCounter.close();
+
         } catch (IOException ex) {
             logger.error("Exception,", ex);
         }
+        ReportFactory.updateSpansLatency(System.currentTimeMillis() - startTimestamp);
     }
 }

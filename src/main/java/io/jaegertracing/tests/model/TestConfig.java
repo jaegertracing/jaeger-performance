@@ -15,6 +15,7 @@ package io.jaegertracing.tests.model;
 
 import static io.jaegertracing.tests.TestUtils.getBooleanEnv;
 import static io.jaegertracing.tests.TestUtils.getIntegerEnv;
+import static io.jaegertracing.tests.TestUtils.getLongEnv;
 import static io.jaegertracing.tests.TestUtils.getStringEnv;
 
 import java.io.IOException;
@@ -50,54 +51,78 @@ public class TestConfig implements Serializable {
     public static TestConfig loadFromEnvironment() {
         return TestConfig
                 .builder()
+                .jobReference(getStringEnv("JOB_REFERENCE", ""))
+                .jaegerServiceName(getStringEnv("JAEGER_SERVICE_NAME", "jaegerqe"))
+                .OpenShiftUrl(getStringEnv("OS_URL", ""))
+                .OpenShiftUsername(getStringEnv("OS_USERNAME", ""))
+                .OpenShiftNamespace(getStringEnv("OS_NAMESPACE", ""))
                 .testsToRun(getStringEnv("TESTS_TO_RUN", "performance,smoke"))
-                .tracersCount(getIntegerEnv("NUMBER_OF_TRACERS", "50"))
-                .spansCount(getIntegerEnv("NUMBER_OF_SPANS", "10000"))
-                .runningOnOpenshift(getBooleanEnv("RUNNING_ON_OPENSHIFT", "false"))
-                .logsDirectory(getStringEnv("LOGS_DIRECTORY", "logs/"))
-                .queryLimit(getIntegerEnv("QUERY_LIMIT", "20000"))
-                .querySamples(getIntegerEnv("QUERY_SAMPLES", "5"))
-                .queryInterval(getIntegerEnv("QUERY_INTERVAL", "-1"))
-                .sender(getStringEnv("SENDER", "http"))
-                .storageType(getStringEnv("STORAGE_TYPE", "elasticsearch"))
-                .spansCountFrom(getStringEnv("SPANS_COUNT_FROM", "jaeger-query"))
-                .storageHost(getStringEnv("STORAGE_HOST", "localhost"))
+                .elasticsearchProvider(getStringEnv("ELASTICSEARCH_PROVIDER", "es-operator"))
+                .storageHost(getStringEnv("STORAGE_HOST", "elasticsearch"))
                 .storagePort(getIntegerEnv("STORAGE_PORT", "9200"))
-                .storageKeyspace(getStringEnv("STORAGE_KEYSPACE", "keyspace"))
-                .jaegerQueryHost(getStringEnv("JAEGER_QUERY_HOST", "localhost"))
-                .jaegerQueryPort(getIntegerEnv("JAEGER_QUERY_PORT", "16686"))
-                .jaegerCollectorHost(getStringEnv("JAEGER_COLLECTOR_HOST", "localhost"))
-                .jaegerCollectorPort(getIntegerEnv("JAEGER_COLLECTOR_PORT", "14268"))
-                .jaegerAgentHost(getStringEnv("JAEGER_AGENT_HOST", "localhost"))
-                .jaegerAgentPort(getIntegerEnv("JAEGER_AGENT_PORT", "6831"))
-                .jaegerFlushInterval(getIntegerEnv("JAEGER_FLUSH_INTERVAL", "100"))
-                .jaegerMaxPocketSize(getIntegerEnv("JAEGER_MAX_POCKET_SIZE", "0"))
-                .jaegerMaxQueueSize(getIntegerEnv("JAEGER_MAX_QUEUE_SIZE", "10000"))
-                .collectorPods(getIntegerEnv("COLLECTOR_PODS", "1"))
-                .collectorQueueSize(getIntegerEnv("COLLECTOR_QUEUE_SIZE", "2000"))
-                .collectorWorkersCount(getIntegerEnv("COLLECTOR_NUM_WORKERS", "50"))
-                .queryStaticFiles(getStringEnv("QUERY_STATIC_FILES", ""))
-                .esMemory(getStringEnv("ES_MEMORY", "1Gi"))
-                .esBulkSize(getIntegerEnv("ES_BULK_SIZE", "5000000"))
-                .esBulkWorkers(getIntegerEnv("ES_BULK_WORKERS", "1"))
-                .esBulkFlushInterval(getStringEnv("ES_BULK_FLUSH_INTERVAL", "200ms"))
-                .imageAgent(getStringEnv("JAEGER_AGENT_IMAGE", "jaegertracing/jaeger-agent:latest"))
-                .imageCollector(getStringEnv("JAEGER_COLLECTOR_IMAGE", "jaegertracing/jaeger-collector:latest"))
-                .imageQuery(getStringEnv("JAEGER_QUERY_IMAGE", "jaegertracing/jaeger-query:latest"))
-                .imageStorage(getStringEnv("STORAGE_IMAGE", "registry.centos.org/rhsyseng/elasticsearch:5.5.2"))
-                .storageImageInSecure(getBooleanEnv("STORAGE_IMAGE_INSECURE", "false"))
-                .imagePerformanceTest(
-                        getStringEnv("PERFORMANCE_TEST_IMAGE", "jkandasa/jaeger-performance-test:latest"))
-                .jaegerAgentQueueSize(getIntegerEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
-                .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
+                .preInstallJaegerOperator(getBooleanEnv("PRE_INSTALL_JAEGER_OPERATOR", "false"))
+                .preInstallJaegerServices(getBooleanEnv("PRE_INSTALL_JAEGER_SERVICES", "false"))
+                .preInstallReporterNodes(getBooleanEnv("PRE_INSTALL_REPORTER_NODES", "false"))
+                .reporterNodeReplicaCount(getIntegerEnv("REPORTER_NODE_REPLICA_COUNT", "5"))
+                .reporterReference(getStringEnv("REPORTER_REFERENCE", "global"))
+                .postDeleteJaegerServices(getBooleanEnv("POST_DELETE_JAEGER_SERVICES", "false"))
+                .postDeleteTestJobs(getBooleanEnv("POST_DELETE_TEST_JOBS", "false"))
+                .postDeleteReporterNodes(getBooleanEnv("POST_DELETE_REPORTER_NODES", "false"))
+                .testHAsetup(getBooleanEnv("TEST_HA_SETUP", "false"))
                 .jaegerqeControllerUrl(getStringEnv("JAEGERQE_CONTROLLER_URL", "http://localhost:8080"))
                 .reportEngineUrl(getStringEnv("REPORT_ENGINE_URL", "http://localhost:8080"))
-                .reportEngineLabel(getStringEnv("REPORT_ENGINE_LABEL", "{}"))
+                .reportEngineLabel(getStringEnv("REPORT_ENGINE_LABELS", "{ }"))
+                .imagePerformanceTest(getStringEnv("IMAGE_PERFORMANCE_TEST", "jkandasa/jaeger-performance-test:2.2.0"))
+                .imageElsaticsearchOperator(getStringEnv("IMAGE_ELASTICSEARCH_OPERATOR",
+                        "quay.io/openshift/origin-elasticsearch-operator:latest"))
+                .imageElsaticsearch(
+                        getStringEnv("IMAGE_ELASTICSEARCH", "registry.centos.org/rhsyseng/elasticsearch:5.6.10"))
+                .imageJaegerOperator(getStringEnv("IMAGE_JAEGER_OPERATOR", "jaegertracing/jaeger-operator:master"))
+                .imageJaegerAgent(getStringEnv("IMAGE_JAEGER_AGENT", "jaegertracing/jaeger-agent:latest"))
+                .imageJaegerCollector(getStringEnv("IMAGE_JAEGER_COLLECTOR", "jaegertracing/jaeger-collector:latest"))
+                .imageJaegerQuery(getStringEnv("IMAGE_JAEGER_QUERY", "jaegertracing/jaeger-query:latest"))
                 .useInternalReporter(getBooleanEnv("USE_INTERNAL_REPORTER", "true"))
-                .spansReportDuration(getStringEnv("REPORT_SPANS_DURATION", "10m"))
-                .reporterReplicaCount(getIntegerEnv("REPORTER_REPLICA_COUNT", "5"))
-                .reporterHostCount(getIntegerEnv("HOST_COUNT_REPORTER", "-1"))
-                .queryHostCount(getIntegerEnv("HOST_COUNT_QUERY", "-1"))
+                .nodeCountSpansReporter(getIntegerEnv("NODE_COUNT_SPANS_REPORTER", "1"))
+                .nodeCountQueryRunner(getIntegerEnv("NODE_COUNT_QUERY_RUNNER", "1"))
+                .mqttBrokerHost(getStringEnv("MSG_BROKER_HOST", "localhost"))
+                .mqttBrokerPort(getIntegerEnv("MSG_BROKER_PORT", "1883"))
+                .mqttBrokerUsername(getStringEnv("MSG_BROKER_USER", "guest"))
+                .numberOfTracers(getIntegerEnv("NUMBER_OF_TRACERS", "10"))
+                .numberOfSpans(getIntegerEnv("NUMBER_OF_SPANS", "10"))
+                .reportSpansDuration(getStringEnv("REPORT_SPANS_DURATION", "10m"))
+                .spansCountFrom(getStringEnv("SPANS_COUNT_FROM", "storage"))
+                .queryLimit(getIntegerEnv("QUERY_LIMIT", "2000"))
+                .querySamples(getIntegerEnv("QUERY_SAMPLES", "5"))
+                .queryInterval(getIntegerEnv("QUERY_INTERVAL", "-1"))
+                .sender(getStringEnv("SENDER", "udp"))
+                .reporterType(getStringEnv("REPORTER_TYPE", "gprc"))
+                .metricsBackend(getStringEnv("METRICS_BACKEND", "expvar"))
+                .jaegerAgentQueueSize(getLongEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
+                .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
+                .jaegerClientFlushInterval(getIntegerEnv("JAEGER_CLIENT_FLUSH_INTERVAL", "200"))
+                .jaegerClientMaxPocketsize(getIntegerEnv("JAEGER_CLIENT_MAX_POCKET_SIZE", "0"))
+                .jaegerClientMaxQueueSize(getIntegerEnv("JAEGER_CLIENT_MAX_QUEUE_SIZE", "10000"))
+                .collectorReplicaCount(getIntegerEnv("COLLECTOR_REPLICA_COUNT", "1"))
+                .collectorQueueSize(getLongEnv("COLLECTOR_QUEUE_SIZE", "2000"))
+                .collectorNumWorkers(getIntegerEnv("COLLECTOR_NUM_WORKERS", "50"))
+                .collectorEsBulkSize(getLongEnv("COLLECTOR_ES_BULK_SIZE", "5000000"))
+                .collectorEsBulkWorkers(getIntegerEnv("COLLECTOR_ES_BULK_WORKERS", "1"))
+                .collectorEsBulkFlushInterval(getStringEnv("COLLECTOR_ES_BULK_FLUSH_INTERVAL", "200ms"))
+                .jaegerQueryStaticFiles(getStringEnv("JAEGER_QUERY_STATIC_FILES", null))
+                .esMemory(getStringEnv("ES_MEMORY", "1Gi"))
+                .logLevelJaegerAgent(getStringEnv("LOG_LEVEL_JAEGER_AGENT", "info"))
+                .logLevelJaegerCollector(getStringEnv("LOG_LEVEL_JAEGER_COLLECTOR", "info"))
+                .logLevelJaegerOperator(getStringEnv("LOG_LEVEL_JAEGER_OPERATOR", "info"))
+                .logLevelJaegerQuery(getStringEnv("LOG_LEVEL_JAEGER_QUERY", "info"))
+                .runningOnOpenshift(getBooleanEnv("RUNNING_ON_OPENSHIFT", "false"))
+                .logsDirectory(getStringEnv("LOGS_DIRECTORY", "logs/"))
+                .jaegerAgentHost(getStringEnv("JAEGER_AGENT_HOST", "localhost"))
+                .jaegerAgentPort(getIntegerEnv("JAEGER_AGENT_PORT", "6831"))
+                .jaegerAgentCollectorPort(getIntegerEnv("JAEGER_AGENT_COLLECTOR_PORT", "14250"))
+                .jaegerCollectorHost(getStringEnv("JAEGER_COLLECTOR_HOST", "localhost"))
+                .jaegerCollectorPort(getIntegerEnv("JAEGER_COLLECTOR_PORT", "6831"))
+                .jaegerQueryHost(getStringEnv("JAEGER_QUERY_HOST", "localhost"))
+                .jaegerQueryPort(getIntegerEnv("JAEGER_QUERY_PORT", "6831"))
                 .build();
     }
 
@@ -121,86 +146,104 @@ public class TestConfig implements Serializable {
         return loadFromEnvironment();
     }
 
+    private String jobReference;
+    private String jaegerServiceName;
+
+    private String OpenShiftUrl;
+    private String OpenShiftUsername;
+    private String OpenShiftNamespace;
+
+    private String testsToRun;
+
+    private String elasticsearchProvider;
+    private String storageHost;
+    private Integer storagePort;
+
+    private Boolean preInstallJaegerOperator;
+    private Boolean preInstallJaegerServices;
+    private Boolean preInstallReporterNodes;
+    private Integer reporterNodeReplicaCount;
+    private String reporterReference;
+    private Boolean postDeleteJaegerServices;
+    private Boolean postDeleteTestJobs;
+    private Boolean postDeleteReporterNodes;
+
+    private Boolean testHAsetup;
+
+    private String jaegerqeControllerUrl;
     private String reportEngineUrl;
     private String reportEngineLabel;
 
-    private Jenkins jenkins;
+    // images
+    private String imagePerformanceTest;
+    private String imageElsaticsearchOperator;
+    private String imageElsaticsearch;
+    private String imageJaegerOperator;
+    private String imageJaegerAgent;
+    private String imageJaegerCollector;
+    private String imageJaegerQuery;
 
-    private String jaegerqeControllerUrl;
     private Boolean useInternalReporter;
-    private Integer reporterReplicaCount;
-    private String spansReportDuration;
+    private Integer nodeCountSpansReporter;
+    private Integer nodeCountQueryRunner;
 
-    private Integer reporterHostCount;
-    private Integer queryHostCount;
+    private String mqttBrokerHost;
+    private Integer mqttBrokerPort;
+    private String mqttBrokerUsername;
 
-    // general data
-    private String testsToRun;
-    private Integer tracersCount;
-    private Integer spansCount;
+    private Integer numberOfTracers;
+    private Integer numberOfSpans;
+    private String reportSpansDuration;
+    private String spansCountFrom;
+
+    private Integer queryLimit;
+    private Integer querySamples;
+    private Integer queryInterval; // in seconds, -1 means, run only at the end
+
+    private String sender;
+    private String reporterType;
+    private String metricsBackend;
+
+    private Long jaegerAgentQueueSize;
+    private Integer jaegerAgentWorkers;
+
+    private Integer jaegerClientFlushInterval;
+    private Integer jaegerClientMaxPocketsize;
+    private Integer jaegerClientMaxQueueSize;
+
+    private Integer collectorReplicaCount;
+    private Long collectorQueueSize;
+    private Integer collectorNumWorkers;
+    private Long collectorEsBulkSize;
+    private Integer collectorEsBulkWorkers;
+    private String collectorEsBulkFlushInterval;
+
+    private String jaegerQueryStaticFiles;
+
+    private String esMemory;
+
+    private String logLevelJaegerAgent;
+    private String logLevelJaegerCollector;
+    private String logLevelJaegerOperator;
+    private String logLevelJaegerQuery;
+
+    private Jenkins jenkins;
 
     private Boolean runningOnOpenshift;
     private String logsDirectory;
 
-    // HTTP GET details
-    private Integer queryLimit;
-    private Integer querySamples;
+    // Jaeger services details
+    private String jaegerAgentHost;
+    private Integer jaegerAgentPort;
+    private Integer jaegerAgentCollectorPort;
 
-    private Integer queryInterval; // in seconds, -1 means, run only at the end
-
-    // sender details
-    private String sender; // http, udp
-    // database details
-    private String storageType; // elasticsearch, cassandra
-    private String spansCountFrom; // storage, jaeger-query
-    private String storageHost;
-    private Integer storagePort;
-
-    private String storageKeyspace;
-    // Jaeger Query details
     private String jaegerQueryHost;
     private Integer jaegerQueryPort;
 
-    // Jaeger collector details
     private String jaegerCollectorHost;
     private Integer jaegerCollectorPort;
 
-    // Jaeger agent details
-    private String jaegerAgentHost;
-    private Integer jaegerAgentPort;
-
-    private Integer jaegerFlushInterval;
-    private Integer jaegerMaxPocketSize;
-
-    private Integer jaegerMaxQueueSize;
-    // collector pod details
-    private Integer collectorPods;
-    private Integer collectorQueueSize;
-
-    private Integer collectorWorkersCount;
-
-    // query pod config
-    private String queryStaticFiles;
-    // Elasticsearch configurations
-    private String esMemory;
-    private Integer esBulkSize;
-    private Integer esBulkWorkers;
-    private String esBulkFlushInterval;
-
-    // images
-    private String imageAgent;
-    private String imageCollector;
-    private String imageQuery;
-
-    private String imageStorage;
-    private Boolean storageImageInSecure;
-
-    private String imagePerformanceTest;
-
     private String jaegerClientVersion;
-
-    private Integer jaegerAgentQueueSize;
-    private Integer jaegerAgentWorkers;
 
     public Float getJaegerSamplingRate() {
         return 1.0F;
@@ -221,15 +264,15 @@ public class TestConfig implements Serializable {
     }
 
     public Long getSpansReportDurationInMillisecond() {
-        Long number = Long.valueOf(spansReportDuration.replaceAll("[^0-9]", ""));
+        Long number = Long.valueOf(reportSpansDuration.replaceAll("[^0-9]", ""));
         Long timestamp = null;
-        if (spansReportDuration.endsWith("s")) {
+        if (reportSpansDuration.endsWith("s")) {
             timestamp = number * 1000L;
-        } else if (spansReportDuration.endsWith("m")) {
+        } else if (reportSpansDuration.endsWith("m")) {
             timestamp = number * 1000L * 60;
-        } else if (spansReportDuration.endsWith("h")) {
+        } else if (reportSpansDuration.endsWith("h")) {
             timestamp = number * 1000L * 60 * 60;
-        } else if (spansReportDuration.endsWith("d")) {
+        } else if (reportSpansDuration.endsWith("d")) {
             timestamp = number * 1000L * 60 * 60 * 24;
         } else {
             timestamp = number;
@@ -251,26 +294,26 @@ public class TestConfig implements Serializable {
     @JsonIgnore
     public HashMap<String, Object> getMap() {
         HashMap<String, Object> data = new HashMap<>();
-        data.put("spansCount", spansCount);
-        data.put("tracersCount", tracersCount);
+        data.put("spansCount", numberOfSpans);
+        data.put("tracersCount", numberOfTracers);
         data.put("sender", sender);
         data.put("jaegerCollectorHost", jaegerCollectorHost);
         data.put("jaegerCollectorPort", jaegerCollectorPort);
         data.put("jaegerAgentHost", jaegerAgentHost);
         data.put("jaegerAgentPort", jaegerAgentPort);
         data.put("jaegerSamplingRate", 1.0);
-        data.put("jaegerFlushInterval", jaegerFlushInterval);
-        data.put("jaegerMaxPocketSize", jaegerMaxPocketSize);
-        data.put("jaegerMaxQueueSize", jaegerMaxQueueSize);
-        data.put("endTime", spansReportDuration);
+        data.put("jaegerFlushInterval", jaegerClientFlushInterval);
+        data.put("jaegerMaxPocketSize", jaegerClientMaxPocketsize);
+        data.put("jaegerMaxQueueSize", jaegerClientMaxQueueSize);
+        data.put("endTime", reportSpansDuration);
         data.put("jaegerQueryHost", jaegerQueryHost);
         data.put("jaegerQueryPort", jaegerQueryPort);
         data.put("jaegerQueryLimit", queryLimit);
         data.put("jaegerQuerySamples", querySamples);
         data.put("jaegerQueryInterval", queryInterval);
         data.put("reportEngineUrl", reportEngineUrl);
-        data.put("queryHostCount", queryHostCount);
-        data.put("reporterHostCount", reporterHostCount);
+        data.put("queryHostCount", nodeCountQueryRunner);
+        data.put("reporterHostCount", nodeCountSpansReporter);
         return data;
     }
 }

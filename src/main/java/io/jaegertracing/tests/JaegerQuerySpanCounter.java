@@ -51,7 +51,7 @@ public class JaegerQuerySpanCounter extends UntilNoChangeCounter {
         String queryUrl = "http://" + config.getJaegerQueryHost() + ":" + config.getJaegerQueryPort();
         long limit = -1;
 
-        limit = config.getSpansCount() * config.getSpansReportDurationInSecond();
+        limit = config.getNumberOfSpans() * config.getSpansReportDurationInSecond();
 
         Timer jaegerQueryTimer = ReportFactory.timer("jaeger-query-span-counter");
 

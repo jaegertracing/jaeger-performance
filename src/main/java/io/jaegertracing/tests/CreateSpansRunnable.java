@@ -39,7 +39,7 @@ public class CreateSpansRunnable implements Runnable {
         private long delay = 0;
 
         public SpansReporer() {
-            delay = (1000L / config.getSpansCount()); // delay in milliseconds
+            delay = (1000L / config.getNumberOfSpans()); // delay in milliseconds
             if (delay > 10) {
                 delay -= 1L; // remove 1ms delay from the actual delay
             }
@@ -77,7 +77,7 @@ public class CreateSpansRunnable implements Runnable {
                 } catch (InterruptedException ex) {
                     logger.error("exception, ", ex);
                 }
-            } while (count < config.getSpansCount());
+            } while (count < config.getNumberOfSpans());
 
             logger.trace("Reporting spans done, duration:{}ms, Tracer:{}",
                     System.currentTimeMillis() - startTime, name);

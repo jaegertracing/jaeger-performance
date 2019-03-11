@@ -18,7 +18,7 @@
 DOCKER_ORG='jkandasa' 
 
 # tag version
-TAG='2.2.0'
+TAG='3.0'
 
 # compile java project
 mvn clean package -Dmaven.test.skip=true

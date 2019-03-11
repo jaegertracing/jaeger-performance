@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -114,7 +114,7 @@ public class TestBase {
             }
             RemoteReporter remoteReporter = new RemoteReporter.Builder()
                     .withSender(conf.getSender())
-                    .withFlushInterval(config.getJaegerFlushInterval())
+                    .withFlushInterval(config.getJaegerClientFlushInterval())
                     .build();
 
             Sampler sampler = new ProbabilisticSampler(config.getJaegerSamplingRate());
@@ -127,7 +127,7 @@ public class TestBase {
     }
 
     public void waitForFlush() {
-        sleep(config.getJaegerFlushInterval() + 1000L);
+        sleep(config.getJaegerClientFlushInterval() + 1000L);
     }
 
     public void sleep(long milliseconds) {

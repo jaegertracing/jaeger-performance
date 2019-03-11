@@ -34,15 +34,16 @@ import lombok.Getter;
 @Slf4j
 public class JaegerMetrics {
     @Default
-    private List<Map<String, Object>> collector = new ArrayList<>();
+    private List<Object> collector = new ArrayList<>();
     @Default
-    private List<Map<String, Object>> agent = new ArrayList<>();
+    private List<Object> agent = new ArrayList<>();
     @Default
-    private List<Map<String, Object>> query = new ArrayList<>();
+    private List<Object> query = new ArrayList<>();
     @Default
     private HashMap<String, Object> summary = new HashMap<>();
 
-    public void updateSummary() {
+    @SuppressWarnings("unchecked")
+    public void updateSummary(String metricsType) {
         try {
             Map<String, Object> collectorSummary = new HashMap<>();
 
@@ -51,10 +52,26 @@ public class JaegerMetrics {
             long spansReceived = 0;
             long errorBusy = 0;
             // update from collector service
-            for (Map<String, Object> map : collector) {
-                long _spansDropped = getSumOfLong(get(map, "jaeger.collector.spans.dropped"));
-                long _spansReceived = getSumOfLong(get(map, "jaeger.collector.spans.received"));
-                long _errorBusy = getSumOfLong(get(map, "jaeger.collector.error.busy"));
+            for (Object _collector : collector) {
+                long _spansDropped = 0;
+                long _spansReceived = 0;
+                long _errorBusy = 0;
+                String _hostname = null;
+
+                if (metricsType.equals("expvar")) {
+                    Map<String, Object> map = (Map<String, Object>) _collector;
+                    _spansDropped = getSumOfLong(get(map, "jaeger.collector.spans.dropped"));
+                    _spansReceived = getSumOfLong(get(map, "jaeger.collector.spans.received"));
+                    _errorBusy = getSumOfLong(get(map, "jaeger.collector.error.busy"));
+                    _hostname = getHostname(map, "jaeger.collector.spans.dropped.host_");
+
+                } else if (metricsType.equals("prometheus")) {
+                    List<Map<String, Object>> list = (List<Map<String, Object>>) _collector;
+                    _spansDropped = getMetricValue(list, "jaeger_collector_spans_dropped_total");
+                    _spansReceived = getMetricValue(list, "jaeger_collector_spans_received_total");
+                    _errorBusy = getMetricValue(list, "jaeger_collector_error_busy");
+                    _hostname = getLabel(list, "jaeger_collector_spans_dropped_total", "host");
+                }
 
                 // add it into overall summary
                 spansDropped += _spansDropped;
@@ -62,7 +79,7 @@ public class JaegerMetrics {
                 errorBusy += _errorBusy;
 
                 Map<String, Object> pod = new HashMap<>();
-                pod.put("hostname", getHostname(map, "jaeger.collector.spans.dropped.host_"));
+                pod.put("hostname", _hostname);
                 pod.put("spansDropped", _spansDropped);
                 pod.put("spansDroppedPercent", Math.round(((_spansDropped * 100.0) / _spansReceived) * 100.0) / 100.0);
                 pod.put("spansSuccess", _spansReceived - _spansDropped);
@@ -81,6 +98,13 @@ public class JaegerMetrics {
             collectorSummary.put("spansSuccess", spansReceived - spansDropped);
             collectorSummary.put("spansReceived", spansReceived);
             collectorSummary.put("errorBusy", errorBusy);
+
+            // update collector receive percentage
+            for (Map<String, Object> pod : podList) {
+                long podSpansReceived = (long) pod.get("spansReceived");
+                pod.put("spansReceivedPercent",
+                        Math.round(((podSpansReceived * 100.0) / spansReceived) * 100.0) / 100.0);
+            }
 
             // update into summary
             summary.put("collector", collectorSummary);
@@ -118,5 +142,42 @@ public class JaegerMetrics {
             }
         }
         return data;
+    }
+
+    @SuppressWarnings("unchecked")
+    private long getMetricValue(List<Map<String, Object>> list, String prefix) {
+        long value = 0;
+        for (Map<String, Object> map : list) {
+            String name = (String) map.get("name");
+            if (name.equals(prefix)) {
+                List<Map<String, Object>> metrics = (List<Map<String, Object>>) map.get("metrics");
+                for (Map<String, Object> metric : metrics) {
+                    if (metric.get("value") != null) {
+                        value += Double.valueOf((String) metric.get("value")).longValue();
+                    }
+                }
+                break;
+            }
+        }
+        return value;
+    }
+
+    @SuppressWarnings("unchecked")
+    private String getLabel(List<Map<String, Object>> list, String prefix, String labelKey) {
+        for (Map<String, Object> map : list) {
+            String name = (String) map.get("name");
+            if (name.equals(prefix)) {
+                List<Map<String, Object>> metrics = (List<Map<String, Object>>) map.get("metrics");
+                for (Map<String, Object> metric : metrics) {
+                    if (metric.get("labels") != null) {
+                        Map<String, Object> labels = (Map<String, Object>) metric.get("labels");
+                        if (labels.get(labelKey) != null) {
+                            return (String) labels.get(labelKey);
+                        }
+                    }
+                }
+            }
+        }
+        return null;
     }
 }

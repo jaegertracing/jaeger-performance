@@ -25,11 +25,14 @@ OS_NAMESPACE=$1
 
 # set metrics file extension
 METRICS_EXTENSION="txt"
-if [[ ${METRICS_BACKEND} = "prometheus" ]]; then
+if [ ${METRICS_BACKEND} = "prometheus" ]; then
   METRICS_EXTENSION="prom"
-elif [[ ${METRICS_BACKEND} = "expvar" ]]; then
+  # download prometheus-scraper
+  curl https://search.maven.org/remotecontent?filepath=org/hawkular/agent/prometheus-scraper/0.23.0.Final/prometheus-scraper-0.23.0.Final-cli.jar -o prometheus-scraper-0.23.0.Final-cli.jar
+elif [ ${METRICS_BACKEND} = "expvar" ]; then
   METRICS_EXTENSION="json"
 fi
+echo "DEBUG: Metric backend: ${METRICS_BACKEND}, selected file extension:${METRICS_EXTENSION}"
 
 # copy log files
 
@@ -41,7 +44,12 @@ PODS=`oc get pods -n ${OS_NAMESPACE} --no-headers -l app=jaeger | awk '{print $1
 
 PODS_LIST=$(echo ${PODS} | tr " " "\n")
 for _pod in ${PODS_LIST}; do
-  _pod_ip=$(oc get pod ${_pod} --template={{.status.podIP}})
+  _pod_ip=$(oc get pod ${_pod} --template={{.status.podIP}} -n ${OS_NAMESPACE})
+  if [[ ${_pod_ip} == "" ]];then
+    echo "DEBUG: Trying IP with jsonpath option"
+    _pod_ip=$(oc get pod ${_pod} -o=jsonpath='{.status.podIP}' -n ${OS_NAMESPACE})
+  fi
+  
   echo "INFO: Copying log file from ${_pod}, IP:${_pod_ip}"
   if [[ ${_pod} = *"query"* ]]; then
     oc logs ${_pod} -c "jaeger-query" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-query.log
@@ -49,18 +57,27 @@ for _pod in ${PODS_LIST}; do
     # metrics - query and agent
     if [[ ${METRICS_BACKEND} != "none" ]]; then
       curl http://${_pod_ip}:16686/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-query.${METRICS_EXTENSION}
+      curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
+      # convert prometheus logs to json
+      if [ ${METRICS_BACKEND} = "prometheus" ]; then
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:16686/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-query.json
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:5778/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
+      fi
     fi
-    # TODO: add metrics backend selection support for agent, till then it uses default
-    curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.prom
   elif [[ ${_pod} = *"collector"* ]]; then
     oc logs ${_pod} -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}.log
     # metrics - collector
     if [[ ${METRICS_BACKEND} != "none" ]]; then
       curl http://${_pod_ip}:14268/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-collector.${METRICS_EXTENSION}
+      # convert prometheus logs to json
+      if [ ${METRICS_BACKEND} = "prometheus" ]; then
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:14268/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-collector.json
+      fi
     fi
   fi
 done
 
 # collect describe logs
-oc describe pods,services,events,configmaps,deployments -l name!=jenkins >> logs/describe.log
+oc describe pods,services,events,configmaps,deployments -l name!=jenkins -n ${OS_NAMESPACE} >> logs/describe.log
+oc get pods -n ${OS_NAMESPACE} >> logs/pods.log
 

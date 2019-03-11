@@ -26,7 +26,7 @@ public abstract class UntilNoChangeCounter implements ISpanCounter {
     private Timer queryTimer;
     private Timer queryUntilNoChangeTimer;
 
-    private static final int MAX_ITERATION = 3;
+    private static final int MAX_ITERATION = 5;
     private static final long ITERATION_DELAY = 5 * 1000L;
 
     public UntilNoChangeCounter() {
@@ -47,8 +47,8 @@ public abstract class UntilNoChangeCounter implements ISpanCounter {
                 spansCountFinal = count();
                 long duration = System.currentTimeMillis() - start;
                 queryTimer.update(duration, TimeUnit.MILLISECONDS);
-                logger.debug("Count took: {}s, spans status[returned:{}, expected:{}]",
-                        TimeUnit.MILLISECONDS.toSeconds(duration), spansCountFinal, expected);
+                logger.debug("Count took: {}ms, spans status[returned:{}, expected:{}]",
+                        duration, spansCountFinal, expected);
                 if (spansCountOld != spansCountFinal) {
                     iteration = 1;
                     spansCountOld = spansCountFinal;

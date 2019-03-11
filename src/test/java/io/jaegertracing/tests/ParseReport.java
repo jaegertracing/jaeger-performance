@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import io.jaegertracing.tests.report.model.JaegerMetrics;
 import io.jaegertracing.tests.model.TestConfig;
@@ -34,43 +35,57 @@ public class ParseReport {
     private static void updateJaegerServiceMetrics(TestConfig config) {
         // check is this local run on OpenShift run
         if (config.getRunningOnOpenshift()) {
-            // filter json files
-            String[] filter = new String[] { "json" };
-            List<File> files = (List<File>) FileUtils.listFiles(new File(config.getLogsDirectory()), filter,
-                    true);
             JaegerMetrics jaegerMetrics = JaegerMetrics.builder().build();
-            for (File _file : files) {
-                try {
-                    logger.info("Metrics file found, location: {}", _file.getCanonicalPath());
-                    if (_file.getName().contains("metrics-query")) {
-                        Map<String, Object> metrics = (Map<String, Object>) JsonUtils.loads(HashMap.class, _file);
-                        jaegerMetrics.getQuery().add(metrics);
-                    } else if (_file.getName().contains("metrics-agent")) {
-                        Map<String, Object> metrics = (Map<String, Object>) JsonUtils.loads(HashMap.class, _file);
-                        jaegerMetrics.getAgent().add(metrics);
-                    } else if (_file.getName().contains("metrics-collector")) {
-                        Map<String, Object> metrics = (Map<String, Object>) JsonUtils.loads(HashMap.class, _file);
-                        jaegerMetrics.getCollector().add(metrics);
-                    }
-                } catch (Exception ex) {
-                    logger.error("Exception,", ex);
-                }
+            Class<?> clazz = List.class;
+            if (config.getMetricsBackend().equals("expvar")) {
+                clazz = HashMap.class;
+            } else if (config.getMetricsBackend().equals("prometheus")) {
+                clazz = List.class;
             }
-            jaegerMetrics.updateSummary();
-            _REPORT.getData().getMetric().setJaegerMetrics(jaegerMetrics);
 
-            // update dropped in collector
-            if (jaegerMetrics.getSummary().containsKey("collector")) {
-                Map<String, Object> collecor = (Map<String, Object>) jaegerMetrics.getSummary().get("collector");
-                if (collecor.get("spansDropped") != null) {
-                    double droppedCollector = Double.valueOf(String.valueOf(collecor.get("spansDropped")));
-                    double sent = Double.valueOf(String.valueOf(_REPORT.getData().getSpansCountStatistics()
-                            .get("sent")));
-                    double droppedCollectorPercent = (droppedCollector * 100) / sent;
-                    _REPORT.getData().getSpansCountStatistics()
-                            .put("dropped_percentage_collector", Math.round(droppedCollectorPercent * 100.0) / 100.0);
+            if (config.getMetricsBackend().equals("expvar") || config.getMetricsBackend().equals("prometheus")) {
+                // filter json files
+                String[] filter = new String[] { "json" };
+                List<File> files = (List<File>) FileUtils.listFiles(new File(config.getLogsDirectory()), filter,
+                        true);
+                for (File _file : files) {
+                    try {
+                        logger.info("Metrics file found, location: {}", _file.getCanonicalPath());
+                        if (_file.getName().contains("metrics-query")) {
+                            Object metrics = JsonUtils.loads(clazz, _file);
+                            jaegerMetrics.getQuery().add(metrics);
+                        } else if (_file.getName().contains("metrics-agent")) {
+                            Object metrics = JsonUtils.loads(clazz, _file);
+                            jaegerMetrics.getAgent().add(metrics);
+                        } else if (_file.getName().contains("metrics-collector")) {
+                            Object metrics = JsonUtils.loads(clazz, _file);
+                            jaegerMetrics.getCollector().add(metrics);
+                        }
+                    } catch (Exception ex) {
+                        logger.error("Exception,", ex);
+                    }
+                }
+                // update
+                jaegerMetrics.updateSummary(config.getMetricsBackend());
+                // update dropped in collector
+                if (jaegerMetrics.getSummary().containsKey("collector")) {
+                    Map<String, Object> collecor = (Map<String, Object>) jaegerMetrics.getSummary().get(
+                            "collector");
+                    if (collecor.get("spansDropped") != null) {
+                        double droppedCollector = Double.valueOf(String.valueOf(collecor.get("spansDropped")));
+                        double sent = Double.valueOf(String.valueOf(_REPORT.getData()
+                                .getSpansCountStatistics()
+                                .get("sent")));
+                        double droppedCollectorPercent = (droppedCollector * 100) / sent;
+                        _REPORT.getData()
+                                .getSpansCountStatistics()
+                                .put("dropped_percentage_collector",
+                                        Math.round(droppedCollectorPercent * 100.0) / 100.0);
+                    }
                 }
             }
+
+            _REPORT.getData().getMetric().setJaegerMetrics(jaegerMetrics);
 
             // send it to report engine
             ReportEngineClient reClient = new ReportEngineClient(config.getReportEngineUrl());
@@ -80,19 +95,20 @@ public class ParseReport {
             // update labels
             HashMap<String, String> labels = new HashMap<>();
 
-            labels.put("imageCollector", config.getImageCollector());
-            labels.put("imageAgent", config.getImageAgent());
-            labels.put("imageQuery", config.getImageQuery());
+            labels.put("jenkinsId", _REPORT.getData().getConfig().getJenkins().getBuildId());
+            labels.put("imageCollector", config.getImageJaegerCollector());
+            labels.put("imageAgent", config.getImageJaegerAgent());
+            labels.put("imageQuery", config.getImageJaegerQuery());
             labels.put("jaegerClientVersion", config.getJaegerClientVersion());
-            labels.put("imageQuery", config.getImageQuery());
+            labels.put("imageQuery", config.getImageJaegerQuery());
             labels.put("jenkinsBuildDate", config.getJenkins().getBuildDate());
             labels.put("jenkinsJobName", config.getJenkins().getJobName());
-            labels.put("collectorPods", String.valueOf(config.getCollectorPods()));
+            labels.put("collectorPods", String.valueOf(config.getCollectorReplicaCount()));
             labels.put("collectorQueueSize", String.valueOf(config.getCollectorQueueSize()));
-            labels.put("collectorWorkers", String.valueOf(config.getCollectorWorkersCount()));
+            labels.put("collectorWorkers", String.valueOf(config.getCollectorNumWorkers()));
+            labels.put("collectorEsBulkSize", String.valueOf(config.getCollectorEsBulkSize()));
+            labels.put("collectorEsBulkWorkers", String.valueOf(config.getCollectorEsBulkWorkers()));
             labels.put("esMemory", config.getEsMemory());
-            labels.put("esBulkSize", String.valueOf(config.getEsBulkSize()));
-            labels.put("esBulkWorkers", String.valueOf(config.getEsBulkWorkers()));
 
             if (System.getenv().containsKey("JOB_REFERENCE")) {
                 labels.put("jobReference", System.getenv("JOB_REFERENCE"));
@@ -105,6 +121,17 @@ public class ParseReport {
             _REPORT.getLabels().putAll(ReportEngineUtils.labels(config.getReportEngineLabel()));
 
             reClient.updateTestData(_REPORT);
+
+            // upload files
+            List<File> filesList = (List<File>) FileUtils.listFiles(new File(config.getLogsDirectory()),
+                    TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
+            for (File file : filesList) {
+                try {
+                    reClient.uploadFile(_REPORT.getId(), file);
+                } catch (Exception ex) {
+                    logger.error("Failed to upload a file:{},", file.getName(), ex);
+                }
+            }
         }
     }
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2018 The Jaeger Authors
+# Copyright 2018-2019 The Jaeger Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -15,13 +15,28 @@
 # Unable to add multiline sed replace with Jenkins pipeline file, hence created this script as a workaround,
 # and moved all the commands to this file.
 
+# pass following arguments in the same order,
+# NAMESPACE
+
+# update namespace name
+OS_NAMESPACE=$1
+
 set -x
-curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yml
-sed -i 's/512Mi/'${ES_MEMORY}'/g' es-cluster-deployment.yml
-sed -i 's/registry.centos.org\/rhsyseng\/elasticsearch:5.6.10/'${STORAGE_IMAGE//\//\\/}'  \
+
+STORAGE_IMAGE_INSECURE="true"
+
+curl https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --output es-cluster-deployment.yaml
+sed -i 's/512Mi/'${ES_MEMORY}'/g' es-cluster-deployment.yaml
+sed -i 's/registry.centos.org\/rhsyseng\/elasticsearch:5.6.10/'${IMAGE_ELASTICSEARCH//\//\\/}'  \
     importPolicy: \
-      insecure: '${STORAGE_IMAGE_INSECURE}'/g' es-cluster-deployment.yml
-oc create -f es-cluster-deployment.yml -n ${OS_NAMESPACE}
+      insecure: '${STORAGE_IMAGE_INSECURE}'/g' es-cluster-deployment.yaml
+
+# remove old deployments
+oc delete -f es-cluster-deployment.yaml --grace-period=1 -n ${OS_NAMESPACE} || true
+# sleep for a while
+sleep 10
+# deploy ES cluster
+oc create -f es-cluster-deployment.yaml -n ${OS_NAMESPACE}
 while true; do
     replicas=$(oc get statefulset/elasticsearch -o=jsonpath='{.status.readyReplicas}' -n ${OS_NAMESPACE})
     ((replicas > 1)) && break
@@ -30,4 +45,4 @@ while true; do
 
 # move deployment file to logs directory
 mkdir -p logs
-mv es-cluster-deployment.yml logs/
+mv es-cluster-deployment.yaml logs/

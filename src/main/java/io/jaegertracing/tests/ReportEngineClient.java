@@ -13,14 +13,16 @@
  */
 package io.jaegertracing.tests;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jaegertracing.tests.report.model.JaegerTestReport;
+import okhttp3.MultipartBody;
 
+import io.jaegertracing.tests.report.model.JaegerTestReport;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -36,6 +38,7 @@ public class ReportEngineClient {
     private ObjectMapper objectMapper = new ObjectMapper();
 
     private static final MediaType JSON = MediaType.parse("application/json; charset=utf-8");
+    private static final MediaType FORM_DATA = MediaType.parse("multipart/form-data; charset=utf-8");
 
     private void sethostUrl(String hostUrl) {
         if (hostUrl.endsWith("/")) {
@@ -101,6 +104,21 @@ public class ReportEngineClient {
             logger.error("Exception,", ex);
         }
         return null;
+    }
+
+    public void uploadFile(String suiteId, File file) {
+        RequestBody requestBody = new MultipartBody.Builder()
+                .setType(FORM_DATA)
+                .addFormDataPart("file", file.getName(),
+                        RequestBody.create(MediaType.get("application/octet-stream"), file))
+                .build();
+
+        Request request = new Request.Builder()
+                .url(String.format("%s/suites/files/uploadSingle/%s", this.hostUrl, suiteId))
+                .post(requestBody)
+                .build();
+        execute(request);
+        logger.debug("File uploaded: {}", file.getAbsolutePath());
     }
 
     public void close() {

@@ -41,6 +41,7 @@ public class ReportFactory {
     private static long spanCountSent = -1;
     private static long spanCountFound = -1;
     private static long spanCountSentByQuery = 0;
+    private static long spansLatency = 0;
 
     public static JaegerTestReport getFinalReport(TestConfig config) {
         updateReport(config);
@@ -77,7 +78,7 @@ public class ReportFactory {
             spansCount = TEST_REPORT.getData().getConfig().getQuerySamples() * 12L * 5L;
         } else {
             // number of query host * number of samples * number of spans for per trigger * spans per query
-            spansCount = TEST_REPORT.getData().getConfig().getQueryHostCount()
+            spansCount = TEST_REPORT.getData().getConfig().getNodeCountQueryRunner()
                     * TEST_REPORT.getData().getConfig().getQuerySamples() * 12L * 5L;
         }
         spanCountSentByQuery += spansCount;
@@ -115,6 +116,8 @@ public class ReportFactory {
         TEST_REPORT.getData().getSpansCountStatistics().put("sent_by_query", spanCountSentByQuery);
         TEST_REPORT.getData().getSpansCountStatistics().put("found", spanCountFound);
 
+        TEST_REPORT.getData().getSpansCountStatistics().put("spansLatency", spansLatency);
+
         long dropped_count = getDroupCount();
         double dropped_percentage = getDroupPercentage();
 
@@ -131,9 +134,10 @@ public class ReportFactory {
     public static int getSpansPerSecond(TestConfig config) {
         final int spansPersecond;
         if (config.getUseInternalReporter()) {
-            spansPersecond = config.getTracersCount() * config.getSpansCount();
+            spansPersecond = config.getNumberOfTracers() * config.getNumberOfSpans();
         } else {
-            spansPersecond = config.getReporterHostCount() * config.getTracersCount() * config.getSpansCount();
+            spansPersecond = config.getNodeCountSpansReporter() * config.getNumberOfTracers()
+                    * config.getNumberOfSpans();
         }
         return spansPersecond;
     }
@@ -145,6 +149,10 @@ public class ReportFactory {
     public static void updateSpansCount(long sent, long found) {
         spanCountSent = sent;
         spanCountFound = found;
+    }
+
+    public static void updateSpansLatency(long latency) {
+        spansLatency = latency;
     }
 
     public static long getDroupCount() {
