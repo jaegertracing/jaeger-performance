@@ -194,6 +194,12 @@ pipeline {
                     # maximum wait duration, 2 hours
                     _TEST_DURATION=7200
 
+                    # check spans duration, if contains 'h' hour, set test duration as 48 hours
+                    # this can be a long run test
+                    if [[ ${REPORT_SPANS_DURATION} = *h* ]]; then
+                        _TEST_DURATION=172800
+                    fi
+
                     # wait_for_pods_status.sh NAMESPACE POD_FILTER WAIT_FOR_STATUS MAX_WAIT_TIME
 
                     if ${TEST_HA_SETUP};then
