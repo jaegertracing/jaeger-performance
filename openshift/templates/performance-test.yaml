@@ -175,6 +175,18 @@ items:
             value: "${LOG_LEVEL_JAEGER_OPERATOR}"
           - name: LOG_LEVEL_JAEGER_QUERY
             value: "${LOG_LEVEL_JAEGER_QUERY}"
+          - name: RESO_LMT_AGENT_CPU
+            value: "${RESO_LMT_AGENT_CPU}"
+          - name: RESO_LMT_AGENT_MEM
+            value: "${RESO_LMT_AGENT_MEM}"
+          - name: RESO_LMT_COLLECTOR_CPU
+            value: "${RESO_LMT_COLLECTOR_CPU}"
+          - name: RESO_LMT_COLLECTOR_MEM
+            value: "${RESO_LMT_COLLECTOR_MEM}"
+          - name: RESO_LMT_QUERY_CPU
+            value: "${RESO_LMT_QUERY_CPU}"
+          - name: RESO_LMT_QUERY_MEM
+            value: "${RESO_LMT_QUERY_MEM}"
           - name: RUNNING_ON_OPENSHIFT
             value: "${RUNNING_ON_OPENSHIFT}"
           - name: LOGS_DIRECTORY
