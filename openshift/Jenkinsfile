@@ -127,30 +127,25 @@ pipeline {
                 sh 'ls -alF'
             }
         }
+        stage('deploy Jaeger operator') {
+            when {
+                expression { params.PRE_INSTALL_JAEGER_OPERATOR }
+            }
+            steps {
+                sh './openshift/scripts/deploy_jaeger_operator.sh'
+            }
+        }
         stage('Deploy jaeger spans reporter') {
             when {
                 expression { !params.USE_INTERNAL_REPORTER && params.PRE_INSTALL_REPORTER_NODES }
             }
             steps {
                 sh '''
-                    # update tchannel, grpc port. http:14268, tchannel:14267, grpc:14250
-                    if [ ${REPORTER_TYPE} == 'grpc' ]; then
-                        export REPORTER_PORT="14250"
-                        export JCH_PREFIX="dns:///"
-                    else
-                        export REPORTER_PORT="14267"
-                        export JCH_PREFIX=""
-                    fi
-
+                    # delete existing spans reporting nodes
                     oc delete job,template,pod,deployment -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}
-                    curl https://raw.githubusercontent.com/Kiali-QE/jaegerspans-reporter/master/openshift-template.yml --output jaeger_spans_reporter.yml
+                    # create spans reporting nodes
+                    curl https://raw.githubusercontent.com/Kiali-QE/jaegerspans-reporter/master/openshift-jaeger-operator-template.yml --output jaeger_spans_reporter.yml
                     oc process -f jaeger_spans_reporter.yml                                                             \
-                        -p=JAEGER_AGENT_IMAGE=${IMAGE_JAEGER_AGENT}                                                     \
-                        -p=JA_METRIC_BACKEND=${METRICS_BACKEND}                                                         \
-                        -p=JAC_QUEUE_SIZE=${JAEGER_AGENT_QUEUE_SIZE}                                                    \
-                        -p=JAC_WORKERS=${JAEGER_AGENT_WORKERS}                                                          \
-                        -p=JA_REPORTER_TYPE=${REPORTER_TYPE}                                                            \
-                        -p=JAEGER_COLLECTOR_HOST_PORT=${JCH_PREFIX}${JAEGER_SERVICE_NAME}-collector:${REPORTER_PORT}    \
                         -p=MQTT_BROKER_HOST=${MSG_BROKER_HOST}                                                          \
                         -p=MQTT_BROKER_PORT=${MSG_BROKER_PORT}                                                          \
                         -p=MQTT_BROKER_USER=${MSG_BROKER_USER}                                                          \
@@ -164,14 +159,6 @@ pipeline {
                     # sleep 30 seconds to get started reporter nodes
                     sleep 30
                 '''
-            }
-        }
-        stage('deploy Jaeger operator') {
-            when {
-                expression { params.PRE_INSTALL_JAEGER_OPERATOR }
-            }
-            steps {
-                sh './openshift/scripts/deploy_jaeger_operator.sh'
             }
         }
         stage('deploy elasticsearch cluster via template') {
