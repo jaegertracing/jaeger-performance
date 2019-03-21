@@ -97,6 +97,13 @@ pipeline {
         string(name: 'LOG_LEVEL_JAEGER_OPERATOR', defaultValue: 'debug', description: 'Jaeger operator log level: debug, info, warn, error, fatal')
         string(name: 'LOG_LEVEL_JAEGER_QUERY', defaultValue: 'info', description: 'Jaeger query log level: debug, info, warn, error, fatal')
 
+        // resource limits
+        string(name: 'RESO_LMT_AGENT_CPU', defaultValue: '200m', description: 'Jaeger agent cpu limit')
+        string(name: 'RESO_LMT_AGENT_MEM', defaultValue: '128Mi', description: 'Jaeger agent memory limit')
+        string(name: 'RESO_LMT_COLLECTOR_CPU', defaultValue: '500m', description: 'Jaeger collector cpu limit')
+        string(name: 'RESO_LMT_COLLECTOR_MEM', defaultValue: '512Mi', description: 'Jaeger collector memory limit')
+        string(name: 'RESO_LMT_QUERY_CPU', defaultValue: '500m', description: 'Jaeger query cpu limit')
+        string(name: 'RESO_LMT_QUERY_MEM', defaultValue: '512Mi', description: 'Jaeger query memory limit')
         
     }
     stages {

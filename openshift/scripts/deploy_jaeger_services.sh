@@ -49,6 +49,12 @@ sed -i 's;${IMAGE_JAEGER_QUERY};'${IMAGE_JAEGER_QUERY}';g' jaeger-services-final
 sed -i 's;${LOG_LEVEL_JAEGER_AGENT};'${LOG_LEVEL_JAEGER_AGENT}';g' jaeger-services-final.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_COLLECTOR};'${LOG_LEVEL_JAEGER_COLLECTOR}';g' jaeger-services-final.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_QUERY};'${LOG_LEVEL_JAEGER_QUERY}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_AGENT_CPU};'${RESO_LMT_AGENT_CPU}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_AGENT_MEM};'${RESO_LMT_AGENT_CPU}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_COLLECTOR_CPU};'${RESO_LMT_COLLECTOR_CPU}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_COLLECTOR_MEM};'${RESO_LMT_COLLECTOR_MEM}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_QUERY_CPU};'${RESO_LMT_QUERY_CPU}';g' jaeger-services-final.yaml
+sed -i 's;${RESO_LMT_QUERY_MEM};'${RESO_LMT_QUERY_MEM}';g' jaeger-services-final.yaml
 
 
 if [ ${#QUERY_STATIC_FILES} -gt 0 ]

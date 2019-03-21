@@ -114,6 +114,12 @@ public class TestConfig implements Serializable {
                 .logLevelJaegerCollector(getStringEnv("LOG_LEVEL_JAEGER_COLLECTOR", "info"))
                 .logLevelJaegerOperator(getStringEnv("LOG_LEVEL_JAEGER_OPERATOR", "info"))
                 .logLevelJaegerQuery(getStringEnv("LOG_LEVEL_JAEGER_QUERY", "info"))
+                .resourceLimitJaegerAgentCpu(getStringEnv("RESO_LMT_AGENT_CPU", null))
+                .resourceLimitJaegerAgentMemory(getStringEnv("RESO_LMT_AGENT_MEM", null))
+                .resourceLimitJaegerCollectorCpu(getStringEnv("RESO_LMT_COLLECTOR_CPU", null))
+                .resourceLimitJaegerCollectorMemory(getStringEnv("RESO_LMT_COLLECTOR_MEM", null))
+                .resourceLimitJaegerQueryCpu(getStringEnv("RESO_LMT_QUERY_CPU", null))
+                .resourceLimitJaegerQueryMemory(getStringEnv("RESO_LMT_QUERY_MEM", null))
                 .runningOnOpenshift(getBooleanEnv("RUNNING_ON_OPENSHIFT", "false"))
                 .logsDirectory(getStringEnv("LOGS_DIRECTORY", "logs/"))
                 .jaegerAgentHost(getStringEnv("JAEGER_AGENT_HOST", "localhost"))
@@ -226,6 +232,13 @@ public class TestConfig implements Serializable {
     private String logLevelJaegerCollector;
     private String logLevelJaegerOperator;
     private String logLevelJaegerQuery;
+
+    private String resourceLimitJaegerAgentCpu;
+    private String resourceLimitJaegerAgentMemory;
+    private String resourceLimitJaegerCollectorCpu;
+    private String resourceLimitJaegerCollectorMemory;
+    private String resourceLimitJaegerQueryCpu;
+    private String resourceLimitJaegerQueryMemory;
 
     private Jenkins jenkins;
 

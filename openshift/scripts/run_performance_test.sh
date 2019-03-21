@@ -108,6 +108,12 @@ sed -i 's;${JAEGER_COLLECTOR_HOST};'${JAEGER_COLLECTOR_HOST}';g' performance-tes
 sed -i 's;${JAEGER_COLLECTOR_PORT};'${JAEGER_COLLECTOR_PORT}';g' performance-test.yaml
 sed -i 's;${JAEGER_QUERY_HOST};'${JAEGER_QUERY_HOST}';g' performance-test.yaml
 sed -i 's;${JAEGER_QUERY_PORT};'${JAEGER_QUERY_PORT}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_AGENT_CPU};'${RESO_LMT_AGENT_CPU}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_AGENT_MEM};'${RESO_LMT_AGENT_CPU}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_COLLECTOR_CPU};'${RESO_LMT_COLLECTOR_CPU}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_COLLECTOR_MEM};'${RESO_LMT_COLLECTOR_MEM}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_QUERY_CPU};'${RESO_LMT_QUERY_CPU}';g' performance-test.yaml
+sed -i 's;${RESO_LMT_QUERY_MEM};'${RESO_LMT_QUERY_MEM}';g' performance-test.yaml
 
 # deploy jaeger performance test
 oc create -n ${OS_NAMESPACE} -f performance-test.yaml

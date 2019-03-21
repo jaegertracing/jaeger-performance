@@ -23,6 +23,13 @@ spec:
   collector:
     replicas: ${COLLECTOR_REPLICA_COUNT}
     image: ${IMAGE_JAEGER_COLLECTOR}
+    resources:
+      requests:
+        memory: "${RESO_LMT_COLLECTOR_MEM}"
+        cpu: "${RESO_LMT_COLLECTOR_CPU}"
+      limits:
+        memory: "${RESO_LMT_COLLECTOR_MEM}"
+        cpu: "${RESO_LMT_COLLECTOR_CPU}"
     options:
       log-level: ${LOG_LEVEL_JAEGER_COLLECTOR}
       metrics-backend: ${METRICS_BACKEND}
@@ -37,6 +44,13 @@ spec:
   query:
     replicas: 1
     image: ${IMAGE_JAEGER_QUERY}
+    resources:
+      requests:
+        cpu: "${RESO_LMT_QUERY_CPU}"
+        memory: "${RESO_LMT_QUERY_MEM}"
+      limits:
+        cpu: "${RESO_LMT_QUERY_CPU}"
+        memory: "${RESO_LMT_QUERY_MEM}"
     options:
       log-level: ${LOG_LEVEL_JAEGER_QUERY}
       metrics-backend: ${METRICS_BACKEND}
@@ -48,6 +62,13 @@ spec:
   agent:
     strategy: sidecar
     image: ${IMAGE_JAEGER_AGENT}
+    resources:
+      requests:
+        cpu: "${RESO_LMT_AGENT_CPU}"
+        memory: "${RESO_LMT_AGENT_MEM}"
+      limits:
+        cpu: "${RESO_LMT_AGENT_CPU}"
+        memory: "${RESO_LMT_AGENT_MEM}"
     options:
       log-level: ${LOG_LEVEL_JAEGER_AGENT}
       metrics-backend: ${METRICS_BACKEND}
