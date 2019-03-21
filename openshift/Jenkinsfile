@@ -135,6 +135,27 @@ pipeline {
                 sh './openshift/scripts/deploy_jaeger_operator.sh'
             }
         }
+        stage('deploy elasticsearch cluster via template') {
+            when {
+                expression { params.ELASTICSEARCH_PROVIDER == 'template' && params.PRE_INSTALL_JAEGER_SERVICES }
+            }
+            steps {
+                sh './openshift/scripts/deploy_es_cluster.sh ${OS_NAMESPACE}'
+            }
+        }
+        stage('Deploy jaeger services') {
+            when {
+                expression { params.PRE_INSTALL_JAEGER_SERVICES }
+            }
+            steps {
+                sh  '''
+                    ./openshift/scripts/deploy_jaeger_services.sh ${OS_NAMESPACE}
+                    # NAMESPACE SERVICE_NAME MAX_WAIT_TIME
+                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-query 60
+                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-collector 60
+                '''
+            }
+        }
         stage('Deploy jaeger spans reporter') {
             when {
                 expression { !params.USE_INTERNAL_REPORTER && params.PRE_INSTALL_REPORTER_NODES }
@@ -156,29 +177,8 @@ pipeline {
                     mv jaeger_spans_reporter_update.yml logs/
                     rm jaeger_spans_reporter.yml
 
-                    # sleep 30 seconds to get started reporter nodes
-                    sleep 30
-                '''
-            }
-        }
-        stage('deploy elasticsearch cluster via template') {
-            when {
-                expression { params.ELASTICSEARCH_PROVIDER == 'template' && params.PRE_INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                sh './openshift/scripts/deploy_es_cluster.sh ${OS_NAMESPACE}'
-            }
-        }
-        stage('Deploy jaeger services') {
-            when {
-                expression { params.PRE_INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                sh  '''
-                    ./openshift/scripts/deploy_jaeger_services.sh ${OS_NAMESPACE}
-                    # NAMESPACE SERVICE_NAME MAX_WAIT_TIME
-                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-query 60
-                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-collector 60
+                    # sleep 60 seconds to get started reporter nodes
+                    sleep 60
                 '''
             }
         }
