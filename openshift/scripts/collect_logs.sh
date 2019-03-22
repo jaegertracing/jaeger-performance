@@ -40,7 +40,9 @@ echo "DEBUG: Metric backend: ${METRICS_BACKEND}, selected file extension:${METRI
 ./openshift/scripts/copy-log-file.sh  ${OS_NAMESPACE} "app=elasticsearch"
 
 # collect jaeger services logs
-PODS=`oc get pods -n ${OS_NAMESPACE} --no-headers -l app=jaeger | awk '{print $1}'`
+# PODS=`oc get pods -n ${OS_NAMESPACE} --no-headers -l app=jaeger | awk '{print $1}'`
+# disabline to get spans reporter pods
+PODS=`oc get pods -n ${OS_NAMESPACE} --no-headers | awk '{print $1}'`
 
 PODS_LIST=$(echo ${PODS} | tr " " "\n")
 for _pod in ${PODS_LIST}; do
@@ -72,6 +74,15 @@ for _pod in ${PODS_LIST}; do
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
         java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:14268/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-collector.json
+      fi
+    fi
+  elif [[ ${_pod} = *"spans-reporter"* ]]; then
+    # metrics - spans-reporter, jaeger agent
+    if [[ ${METRICS_BACKEND} != "none" ]]; then
+      curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
+      # convert prometheus logs to json
+      if [ ${METRICS_BACKEND} = "prometheus" ]; then
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:5778/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
       fi
     fi
   fi
