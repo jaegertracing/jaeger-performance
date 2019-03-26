@@ -70,6 +70,10 @@ spec:
     options:
       log-level: ${LOG_LEVEL_JAEGER_AGENT}
       metrics-backend: ${METRICS_BACKEND}
+      processor:
+        jaeger-compact:
+          server-queue-size: ${JAEGER_AGENT_QUEUE_SIZE}
+          workers: ${JAEGER_AGENT_WORKERS}
   storage:
     type: elasticsearch
     esIndexCleaner:

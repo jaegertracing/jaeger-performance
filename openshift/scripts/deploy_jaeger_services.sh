@@ -55,6 +55,8 @@ sed -i 's;${RESO_LMT_COLLECTOR_CPU};'${RESO_LMT_COLLECTOR_CPU}';g' jaeger-servic
 sed -i 's;${RESO_LMT_COLLECTOR_MEM};'${RESO_LMT_COLLECTOR_MEM}';g' jaeger-services-final.yaml
 sed -i 's;${RESO_LMT_QUERY_CPU};'${RESO_LMT_QUERY_CPU}';g' jaeger-services-final.yaml
 sed -i 's;${RESO_LMT_QUERY_MEM};'${RESO_LMT_QUERY_MEM}';g' jaeger-services-final.yaml
+sed -i 's;${JAEGER_AGENT_QUEUE_SIZE};'${JAEGER_AGENT_QUEUE_SIZE}';g' jaeger-services-final.yaml
+sed -i 's;${JAEGER_AGENT_WORKERS};'${JAEGER_AGENT_WORKERS}';g' jaeger-services-final.yaml
 
 
 if [ ${#QUERY_STATIC_FILES} -gt 0 ]
