@@ -108,6 +108,7 @@ public class TestConfig implements Serializable {
                 .collectorEsBulkSize(getLongEnv("COLLECTOR_ES_BULK_SIZE", "5000000"))
                 .collectorEsBulkWorkers(getIntegerEnv("COLLECTOR_ES_BULK_WORKERS", "1"))
                 .collectorEsBulkFlushInterval(getStringEnv("COLLECTOR_ES_BULK_FLUSH_INTERVAL", "200ms"))
+                .collectorEsTagsAsFieldsAll(getBooleanEnv("COLLECTOR_ES_TAGS_AS_FIELDS", "false"))
                 .jaegerQueryStaticFiles(getStringEnv("JAEGER_QUERY_STATIC_FILES", null))
                 .esMemory(getStringEnv("ES_MEMORY", "1Gi"))
                 .logLevelJaegerAgent(getStringEnv("LOG_LEVEL_JAEGER_AGENT", "info"))
@@ -223,6 +224,7 @@ public class TestConfig implements Serializable {
     private Long collectorEsBulkSize;
     private Integer collectorEsBulkWorkers;
     private String collectorEsBulkFlushInterval;
+    private Boolean collectorEsTagsAsFieldsAll;
 
     private String jaegerQueryStaticFiles;
 

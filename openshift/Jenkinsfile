@@ -86,6 +86,7 @@ pipeline {
         string(name: 'COLLECTOR_ES_BULK_SIZE', defaultValue: '5000000', description: '--es.bulk.size')
         string(name: 'COLLECTOR_ES_BULK_WORKERS', defaultValue: '1', description: '--es.bulk.workers')
         string(name: 'COLLECTOR_ES_BULK_FLUSH_INTERVAL', defaultValue: '200ms', description: '--es.bulk.flush-interval')
+        booleanParam(name: 'COLLECTOR_ES_TAGS_AS_FIELDS', defaultValue: false, description: 'Store all span and process tags as object fields. If true .tags-as-fields.config-file is ignored. Binary tags are always stored as nested objects.')
 
         string(name: 'JAEGER_QUERY_STATIC_FILES', defaultValue: '', description: '--query.static-files')
 

@@ -92,6 +92,7 @@ sed -i 's;${COLLECTOR_NUM_WORKERS};'${COLLECTOR_NUM_WORKERS}';g' performance-tes
 sed -i 's;${COLLECTOR_ES_BULK_SIZE};'${COLLECTOR_ES_BULK_SIZE}';g' performance-test.yaml
 sed -i 's;${COLLECTOR_ES_BULK_WORKERS};'${COLLECTOR_ES_BULK_WORKERS}';g' performance-test.yaml
 sed -i 's;${COLLECTOR_ES_BULK_FLUSH_INTERVAL};'${COLLECTOR_ES_BULK_FLUSH_INTERVAL}';g' performance-test.yaml
+sed -i 's;${COLLECTOR_ES_TAGS_AS_FIELDS};'${COLLECTOR_ES_TAGS_AS_FIELDS}';g' performance-test.yaml
 sed -i 's;${JAEGER_QUERY_STATIC_FILES};'${JAEGER_QUERY_STATIC_FILES}';g' performance-test.yaml
 sed -i 's;${ES_MEMORY};'${ES_MEMORY}';g' performance-test.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_AGENT};'${LOG_LEVEL_JAEGER_AGENT}';g' performance-test.yaml

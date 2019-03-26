@@ -73,7 +73,7 @@ public class JaegerMetrics {
         // "jaeger.agent.thrift.udp.server.packets.processed.model_jaeger.protocol_compact": 147926,
 
         try {
-            Map<String, Object> summary = new HashMap<>();
+            Map<String, Object> agentSummary = new HashMap<>();
             List<Map<String, Object>> podList = new ArrayList<>();
 
             long batchesSubmittedProtocolGrpc = 0;
@@ -155,15 +155,15 @@ public class JaegerMetrics {
             }
 
             // update summary
-            summary.put("batchesSubmittedProtocolGrpc", batchesSubmittedProtocolGrpc);
-            summary.put("spansSubmittedProtocolGrpc", spansSubmittedProtocolGrpc);
-            summary.put("spansFailuresTotalGrpc", spansFailuresTotalGrpc);
-            summary.put("pacetSizeProtocolCompact", pacetSizeProtocolCompact);
-            summary.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
-            summary.put("pacetsDroppedTotalProtocolCompact", pacetsDroppedTotalProtocolCompact);
+            agentSummary.put("batchesSubmittedProtocolGrpc", batchesSubmittedProtocolGrpc);
+            agentSummary.put("spansSubmittedProtocolGrpc", spansSubmittedProtocolGrpc);
+            agentSummary.put("spansFailuresTotalGrpc", spansFailuresTotalGrpc);
+            agentSummary.put("pacetSizeProtocolCompact", pacetSizeProtocolCompact);
+            agentSummary.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
+            agentSummary.put("pacetsDroppedTotalProtocolCompact", pacetsDroppedTotalProtocolCompact);
 
             // update into summary
-            summary.put("agent", summary);
+            summary.put("agent", agentSummary);
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         }

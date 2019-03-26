@@ -41,6 +41,8 @@ spec:
           size: ${COLLECTOR_ES_BULK_SIZE}
           workers: ${COLLECTOR_ES_BULK_WORKERS}
           flush-interval: ${COLLECTOR_ES_BULK_FLUSH_INTERVAL}
+        tags-as-fields:
+          all: ${COLLECTOR_ES_TAGS_AS_FIELDS}
   query:
     replicas: 1
     image: ${IMAGE_JAEGER_QUERY}

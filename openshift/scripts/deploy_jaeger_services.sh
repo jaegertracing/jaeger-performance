@@ -40,6 +40,7 @@ sed -i 's;${COLLECTOR_QUEUE_SIZE};'${COLLECTOR_QUEUE_SIZE}';g' jaeger-services-f
 sed -i 's;${COLLECTOR_ES_BULK_SIZE};'${COLLECTOR_ES_BULK_SIZE}';g' jaeger-services-final.yaml
 sed -i 's;${COLLECTOR_ES_BULK_WORKERS};'${COLLECTOR_ES_BULK_WORKERS}';g' jaeger-services-final.yaml
 sed -i 's;${COLLECTOR_ES_BULK_FLUSH_INTERVAL};'${COLLECTOR_ES_BULK_FLUSH_INTERVAL}';g' jaeger-services-final.yaml
+sed -i 's;${COLLECTOR_ES_TAGS_AS_FIELDS};'${COLLECTOR_ES_TAGS_AS_FIELDS}';g' jaeger-services-final.yaml
 sed -i 's;${STORAGE_HOST};'${STORAGE_HOST}';g' jaeger-services-final.yaml
 sed -i 's;${STORAGE_PORT};'${STORAGE_PORT}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_ELASTICSEARCH};'${IMAGE_ELASTICSEARCH}';g' jaeger-services-final.yaml
