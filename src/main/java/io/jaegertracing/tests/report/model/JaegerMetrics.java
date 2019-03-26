@@ -42,16 +42,143 @@ public class JaegerMetrics {
     @Default
     private HashMap<String, Object> summary = new HashMap<>();
 
-    @SuppressWarnings("unchecked")
+    private static final String[] REMOVE_KEYS = { "memstats" };
+
     public void updateSummary(String metricsType) {
+        updateCollectorSummary(metricsType);
+        updateAgentSummary(metricsType);
+        updateQuerySummary(metricsType);
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateQuerySummary(String metricsType) {
+        try {
+            // TODO: query service required values need to be updated 
+            for (Object _query : query) {
+                if (metricsType.equals("expvar")) {
+                    Map<String, Object> map = (Map<String, Object>) _query;
+                    removeKey(map);
+                }
+            }
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateAgentSummary(String metricsType) {
+        // "jaeger.agent.reporter.batches.submitted.format_jaeger.protocol_grpc": 147926,
+        // "jaeger.agent.reporter.spans.submitted.format_jaeger.protocol_grpc": 2.709052e+06,
+        // "jaeger.agent.thrift.udp.server.packet_size.model_jaeger.protocol_compact": 576,
+        // "jaeger.agent.thrift.udp.server.packets.processed.model_jaeger.protocol_compact": 147926,
+
+        try {
+            Map<String, Object> summary = new HashMap<>();
+            List<Map<String, Object>> podList = new ArrayList<>();
+
+            long batchesSubmittedProtocolGrpc = 0;
+            long spansSubmittedProtocolGrpc = 0;
+            long spansFailuresTotalGrpc = 0;
+
+            long pacetSizeProtocolCompact = 0;
+            long pacetsProcessedTotalProtocolCompact = 0;
+            long pacetsDroppedTotalProtocolCompact = 0;
+
+            for (Object _agent : agent) {
+                long _batchesSubmittedProtocolGrpc = 0;
+                long _spansSubmittedProtocolGrpc = 0;
+                long _spansFailuresTotalGrpc = 0;
+
+                long _pacetSizeProtocolCompact = 0;
+                long _pacetsProcessedTotalProtocolCompact = 0;
+                long _pacetsDroppedTotalProtocolCompact = 0;
+
+                if (metricsType.equals("expvar")) {
+                    Map<String, Object> map = (Map<String, Object>) _agent;
+                    removeKey(map);
+
+                    _batchesSubmittedProtocolGrpc = getLong(map,
+                            "jaeger.agent.reporter.batches.submitted.format_jaeger.protocol_grpc");
+                    _spansSubmittedProtocolGrpc = getLong(map,
+                            "jaeger.agent.reporter.spans.submitted.format_jaeger.protocol_grpc");
+                    _spansFailuresTotalGrpc = getLong(map,
+                            "jaeger.agent.reporter.spans.failures.format_jaeger.protocol_grpc");
+
+                    _pacetSizeProtocolCompact = getLong(map,
+                            "jaeger.agent.thrift.udp.server.packet_size.model_jaeger.protocol_compact");
+                    _pacetsProcessedTotalProtocolCompact = getLong(map,
+                            "jaeger.agent.thrift.udp.server.packets.processed.model_jaeger.protocol_compact");
+                    _pacetsDroppedTotalProtocolCompact = getLong(map,
+                            "jaeger.agent.thrift.udp.server.packets.dropped.model_jaeger.protocol_compact");
+                } else if (metricsType.equals("prometheus")) {
+                    List<Map<String, Object>> list = (List<Map<String, Object>>) _agent;
+
+                    HashMap<String, String> labelFilter = new HashMap<>();
+                    labelFilter.put("format", "jaeger");
+                    labelFilter.put("protocol", "grpc");
+
+                    _batchesSubmittedProtocolGrpc = getMetricValue(
+                            list, "jaeger_agent_reporter_batches_submitted_total", labelFilter);
+                    _spansSubmittedProtocolGrpc = getMetricValue(
+                            list, "jaeger_agent_reporter_spans_submitted_total", labelFilter);
+                    _spansFailuresTotalGrpc = getMetricValue(
+                            list, "jaeger_agent_reporter_spans_failures_total", labelFilter);
+
+                    // update protocol
+                    labelFilter.put("protocol", "compact");
+
+                    _pacetSizeProtocolCompact = getMetricValue(
+                            list, "jaeger_agent_thrift_udp_server_packet_size", labelFilter);
+                    _pacetsProcessedTotalProtocolCompact = getMetricValue(
+                            list, "jaeger_agent_thrift_udp_server_packets_processed_total", labelFilter);
+                    _pacetsDroppedTotalProtocolCompact = getMetricValue(
+                            list, "jaeger_agent_thrift_udp_server_packets_dropped_total", labelFilter);
+                }
+
+                // add it into overall summary
+                batchesSubmittedProtocolGrpc += _batchesSubmittedProtocolGrpc;
+                spansSubmittedProtocolGrpc += _spansSubmittedProtocolGrpc;
+                spansFailuresTotalGrpc += _spansFailuresTotalGrpc;
+                pacetSizeProtocolCompact += _pacetSizeProtocolCompact;
+                pacetsProcessedTotalProtocolCompact += _pacetsProcessedTotalProtocolCompact;
+
+                Map<String, Object> pod = new HashMap<>();
+                pod.put("batchesSubmittedProtocolGrpc", _batchesSubmittedProtocolGrpc);
+                pod.put("spansFailuresTotalGrpc", _spansFailuresTotalGrpc);
+                pod.put("spansSubmittedProtocolGrpc", _spansSubmittedProtocolGrpc);
+                pod.put("pacetSizeProtocolCompact", _pacetSizeProtocolCompact);
+                pod.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
+                pod.put("pacetsDroppedTotalProtocolCompact", _pacetsDroppedTotalProtocolCompact);
+
+                // add it in to pods list
+                podList.add(pod);
+            }
+
+            // update summary
+            summary.put("batchesSubmittedProtocolGrpc", batchesSubmittedProtocolGrpc);
+            summary.put("spansSubmittedProtocolGrpc", spansSubmittedProtocolGrpc);
+            summary.put("spansFailuresTotalGrpc", spansFailuresTotalGrpc);
+            summary.put("pacetSizeProtocolCompact", pacetSizeProtocolCompact);
+            summary.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
+            summary.put("pacetsDroppedTotalProtocolCompact", pacetsDroppedTotalProtocolCompact);
+
+            // update into summary
+            summary.put("agent", summary);
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void updateCollectorSummary(String metricsType) {
         try {
             Map<String, Object> collectorSummary = new HashMap<>();
 
+            // update from collector service
             List<Map<String, Object>> podList = new ArrayList<>();
             long spansDropped = 0;
             long spansReceived = 0;
             long errorBusy = 0;
-            // update from collector service
             for (Object _collector : collector) {
                 long _spansDropped = 0;
                 long _spansReceived = 0;
@@ -60,6 +187,8 @@ public class JaegerMetrics {
 
                 if (metricsType.equals("expvar")) {
                     Map<String, Object> map = (Map<String, Object>) _collector;
+                    removeKey(map);
+
                     _spansDropped = getSumOfLong(get(map, "jaeger.collector.spans.dropped"));
                     _spansReceived = getSumOfLong(get(map, "jaeger.collector.spans.received"));
                     _errorBusy = getSumOfLong(get(map, "jaeger.collector.error.busy"));
@@ -134,6 +263,19 @@ public class JaegerMetrics {
         return null;
     }
 
+    private long getLong(Map<String, Object> map, String prefix) {
+        try {
+            for (String key : map.keySet()) {
+                if (key.startsWith(prefix)) {
+                    return Long.valueOf(String.valueOf(map.get(key)));
+                }
+            }
+        } catch (Exception ex) {
+            logger.debug("Exception,", ex);
+        }
+        return 0L;
+    }
+
     private List<Object> get(Map<String, Object> map, String prefix) {
         List<Object> data = new ArrayList<>();
         for (String key : map.keySet()) {
@@ -144,15 +286,31 @@ public class JaegerMetrics {
         return data;
     }
 
-    @SuppressWarnings("unchecked")
     private long getMetricValue(List<Map<String, Object>> list, String prefix) {
+        return getMetricValue(list, prefix, null);
+    }
+
+    @SuppressWarnings("unchecked")
+    private long getMetricValue(List<Map<String, Object>> list, String prefix, Map<String, String> labelFilter) {
         long value = 0;
         for (Map<String, Object> map : list) {
             String name = (String) map.get("name");
             if (name.equals(prefix)) {
                 List<Map<String, Object>> metrics = (List<Map<String, Object>>) map.get("metrics");
                 for (Map<String, Object> metric : metrics) {
-                    if (metric.get("value") != null) {
+                    if (labelFilter != null) {
+                        boolean include = true;
+                        Map<String, String> labels = (Map<String, String>) map.get("labels");
+                        for (String key : labelFilter.keySet()) {
+                            if (!labels.get(key).equals(labelFilter.get(key))) {
+                                include = false;
+                                break;
+                            }
+                        }
+                        if (include) {
+                            value += Double.valueOf((String) metric.get("value")).longValue();
+                        }
+                    } else if (metric.get("value") != null) {
                         value += Double.valueOf((String) metric.get("value")).longValue();
                     }
                 }
@@ -179,5 +337,13 @@ public class JaegerMetrics {
             }
         }
         return null;
+    }
+
+    private void removeKey(Map<String, Object> map) {
+        for (String key : REMOVE_KEYS) {
+            if (map.containsKey(key)) {
+                map.remove(key);
+            }
+        }
     }
 }
