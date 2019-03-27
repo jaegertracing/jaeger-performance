@@ -48,6 +48,12 @@ public class JaegerMetrics {
         updateCollectorSummary(metricsType);
         updateAgentSummary(metricsType);
         updateQuerySummary(metricsType);
+        // remove metrics
+        if (metricsType.equals("prometheus")) {
+            collector.clear();
+            agent.clear();
+            query.clear();
+        }
     }
 
     @SuppressWarnings("unchecked")
@@ -155,6 +161,7 @@ public class JaegerMetrics {
             }
 
             // update summary
+            agentSummary.put("pod", podList);
             agentSummary.put("batchesSubmittedProtocolGrpc", batchesSubmittedProtocolGrpc);
             agentSummary.put("spansSubmittedProtocolGrpc", spansSubmittedProtocolGrpc);
             agentSummary.put("spansFailuresTotalGrpc", spansFailuresTotalGrpc);
@@ -300,9 +307,9 @@ public class JaegerMetrics {
                 for (Map<String, Object> metric : metrics) {
                     if (labelFilter != null) {
                         boolean include = true;
-                        Map<String, String> labels = (Map<String, String>) map.get("labels");
+                        Map<String, String> labels = (Map<String, String>) metric.get("labels");
                         for (String key : labelFilter.keySet()) {
-                            if (!labels.get(key).equals(labelFilter.get(key))) {
+                            if (labels.get(key) == null || !labels.get(key).equals(labelFilter.get(key))) {
                                 include = false;
                                 break;
                             }
@@ -346,4 +353,5 @@ public class JaegerMetrics {
             }
         }
     }
+
 }
