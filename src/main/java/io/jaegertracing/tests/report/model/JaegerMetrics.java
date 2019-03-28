@@ -116,6 +116,7 @@ public class JaegerMetrics {
                             "jaeger.agent.thrift.udp.server.packets.processed.model_jaeger.protocol_compact");
                     _pacetsDroppedTotalProtocolCompact = getLong(map,
                             "jaeger.agent.thrift.udp.server.packets.dropped.model_jaeger.protocol_compact");
+
                 } else if (metricsType.equals("prometheus")) {
                     List<Map<String, Object>> list = (List<Map<String, Object>>) _agent;
 

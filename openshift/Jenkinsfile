@@ -164,7 +164,7 @@ pipeline {
             steps {
                 sh '''
                     # delete existing spans reporting nodes
-                    oc delete job,template,pod,deployment -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}
+                    oc delete job,template,pod,deployment,service -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}
                     # create spans reporting nodes
                     curl https://raw.githubusercontent.com/Kiali-QE/jaegerspans-reporter/master/openshift-jaeger-operator-template.yml --output jaeger_spans_reporter.yml
                     oc process -f jaeger_spans_reporter.yml                                                             \

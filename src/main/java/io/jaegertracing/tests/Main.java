@@ -30,6 +30,10 @@ import org.junit.runner.Result;
 
 import com.codahale.metrics.Timer;
 
+import io.jaegertracing.tests.resourcemonitor.Runner;
+
+import io.jaegertracing.tests.clients.JaegerQEControllerClient;
+import io.jaegertracing.tests.clients.ReportEngineClient;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.reporters.RemoteReporter;
 import io.jaegertracing.internal.samplers.ConstSampler;
@@ -89,7 +93,6 @@ public class Main {
                     * config.getNumberOfSpans() * (config.getSpansReportDurationInSecond());
         }
         ReportFactory.updateSpansCountByReporter(expectedSpansCountByReporter);
-
     }
 
     public void execute() throws Exception {
@@ -98,6 +101,9 @@ public class Main {
         if (config.isPerformanceTestEnabled()) {
             // update report status to report engine
             reClient.addTestData(ReportFactory.getFinalReport(config));
+
+            // start metrics collector
+            Runner.start();
 
             triggerCreateSpans();
 
@@ -115,6 +121,9 @@ public class Main {
             logger.info("Performance test is disabled.");
         }
         executeSmokeTests();
+
+        // stop metrics collector
+        Runner.stop();
 
         logger.info("Final Report as json:\n@@START@@\n{}\n@@END@@", ReportFactory.getFinalReportAsString(config));
         ReportFactory.saveFinalReport(config, "/tmp/performance_report.json");

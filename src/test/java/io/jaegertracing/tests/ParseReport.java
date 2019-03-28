@@ -21,6 +21,8 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
+import io.jaegertracing.tests.clients.ReportEngineClient;
+
 import io.jaegertracing.tests.report.model.JaegerMetrics;
 import io.jaegertracing.tests.model.TestConfig;
 import io.jaegertracing.tests.report.ReportFactory;

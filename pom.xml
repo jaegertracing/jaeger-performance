@@ -150,6 +150,12 @@
       <artifactId>lombok</artifactId>
       <version>${version.projectlombok}</version>
     </dependency>
+    
+    <dependency>
+      <groupId>org.hawkular.agent</groupId>
+      <artifactId>prometheus-scraper</artifactId>
+      <version>0.23.0.Final</version>
+    </dependency>
 
   </dependencies>
 

@@ -38,10 +38,19 @@ public class ReportFactory {
 
     private static final MetricRegistry METRICS_REGISTRY = new MetricRegistry();
 
+    private static TestConfig testConfig = null;
+
     private static long spanCountSent = -1;
     private static long spanCountFound = -1;
     private static long spanCountSentByQuery = 0;
     private static long spansLatency = 0;
+
+    public static TestConfig testConfig() {
+        if (testConfig == null) {
+            testConfig = TestConfig.get();
+        }
+        return testConfig;
+    }
 
     public static JaegerTestReport getFinalReport(TestConfig config) {
         updateReport(config);
