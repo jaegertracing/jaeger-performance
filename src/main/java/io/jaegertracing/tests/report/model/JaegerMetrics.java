@@ -85,6 +85,7 @@ public class JaegerMetrics {
             long batchesSubmittedProtocolGrpc = 0;
             long spansSubmittedProtocolGrpc = 0;
             long spansFailuresTotalGrpc = 0;
+            long spansReceivedTotalGrpc = 0;
 
             long pacetSizeProtocolCompact = 0;
             long pacetsProcessedTotalProtocolCompact = 0;
@@ -94,6 +95,7 @@ public class JaegerMetrics {
                 long _batchesSubmittedProtocolGrpc = 0;
                 long _spansSubmittedProtocolGrpc = 0;
                 long _spansFailuresTotalGrpc = 0;
+                long _spansReceivedTotalGrpc = 0;
 
                 long _pacetSizeProtocolCompact = 0;
                 long _pacetsProcessedTotalProtocolCompact = 0;
@@ -109,6 +111,7 @@ public class JaegerMetrics {
                             "jaeger.agent.reporter.spans.submitted.format_jaeger.protocol_grpc");
                     _spansFailuresTotalGrpc = getLong(map,
                             "jaeger.agent.reporter.spans.failures.format_jaeger.protocol_grpc");
+                    _spansReceivedTotalGrpc = _spansSubmittedProtocolGrpc + _spansFailuresTotalGrpc;
 
                     _pacetSizeProtocolCompact = getLong(map,
                             "jaeger.agent.thrift.udp.server.packet_size.model_jaeger.protocol_compact");
@@ -131,6 +134,8 @@ public class JaegerMetrics {
                     _spansFailuresTotalGrpc = getMetricValue(
                             list, "jaeger_agent_reporter_spans_failures_total", labelFilter);
 
+                    _spansReceivedTotalGrpc = _spansSubmittedProtocolGrpc + _spansFailuresTotalGrpc;
+
                     // update protocol
                     labelFilter.put("protocol", "compact");
 
@@ -146,6 +151,7 @@ public class JaegerMetrics {
                 batchesSubmittedProtocolGrpc += _batchesSubmittedProtocolGrpc;
                 spansSubmittedProtocolGrpc += _spansSubmittedProtocolGrpc;
                 spansFailuresTotalGrpc += _spansFailuresTotalGrpc;
+                spansReceivedTotalGrpc += spansReceivedTotalGrpc;
                 pacetSizeProtocolCompact += _pacetSizeProtocolCompact;
                 pacetsProcessedTotalProtocolCompact += _pacetsProcessedTotalProtocolCompact;
 
@@ -153,6 +159,7 @@ public class JaegerMetrics {
                 pod.put("batchesSubmittedProtocolGrpc", _batchesSubmittedProtocolGrpc);
                 pod.put("spansFailuresTotalGrpc", _spansFailuresTotalGrpc);
                 pod.put("spansSubmittedProtocolGrpc", _spansSubmittedProtocolGrpc);
+                pod.put("spansReceivedTotalGrpc", _spansReceivedTotalGrpc);
                 pod.put("pacetSizeProtocolCompact", _pacetSizeProtocolCompact);
                 pod.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
                 pod.put("pacetsDroppedTotalProtocolCompact", _pacetsDroppedTotalProtocolCompact);
@@ -166,6 +173,7 @@ public class JaegerMetrics {
             agentSummary.put("batchesSubmittedProtocolGrpc", batchesSubmittedProtocolGrpc);
             agentSummary.put("spansSubmittedProtocolGrpc", spansSubmittedProtocolGrpc);
             agentSummary.put("spansFailuresTotalGrpc", spansFailuresTotalGrpc);
+            agentSummary.put("spansReceivedTotalGrpc", spansReceivedTotalGrpc);
             agentSummary.put("pacetSizeProtocolCompact", pacetSizeProtocolCompact);
             agentSummary.put("pacetsProcessedTotalProtocolCompact", pacetsProcessedTotalProtocolCompact);
             agentSummary.put("pacetsDroppedTotalProtocolCompact", pacetsDroppedTotalProtocolCompact);

@@ -258,7 +258,7 @@ public class Runner {
                     metrics.add(gauge);
                 }
             } catch (Exception ex) {
-                logger.error("Exception,", ex);
+                logger.error("Exception, ip:{}", ip, ex);
             }
         }
 
