@@ -49,7 +49,7 @@ public class Runner {
         }
         try {
             updateIps();
-            TIMER.schedule(new MonitorResouces(), 10000L, 30 * 1000L);
+            TIMER.schedule(new MonitorResouces(), 10000L, 10 * 1000L);
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         } finally {
