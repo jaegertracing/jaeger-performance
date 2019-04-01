@@ -24,9 +24,15 @@ OS_NAMESPACE=$1
 
 set -x
 
-# copy jaeger services production template
+# copy jaeger services template
+# "es-operator": install elastic search es operator based
+# "template": ES cluster will be installed with template
+# "external": external ES cluster url will be provides
+# "none": Use all-in-one jaeger services template
 if [ ${ELASTICSEARCH_PROVIDER} == 'es-operator' ]; then
     cp openshift/templates/jaeger-services-deploy-es.yaml jaeger-services-final.yaml
+elif [ ${ELASTICSEARCH_PROVIDER} == 'none' ]; then
+    cp openshift/templates/jaeger-services-all-in-one.yaml jaeger-services-final.yaml
 else
     cp openshift/templates/jaeger-services-es-url.yaml jaeger-services-final.yaml
 fi
@@ -44,6 +50,7 @@ sed -i 's;${COLLECTOR_ES_TAGS_AS_FIELDS};'${COLLECTOR_ES_TAGS_AS_FIELDS}';g' jae
 sed -i 's;${STORAGE_HOST};'${STORAGE_HOST}';g' jaeger-services-final.yaml
 sed -i 's;${STORAGE_PORT};'${STORAGE_PORT}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_ELASTICSEARCH};'${IMAGE_ELASTICSEARCH}';g' jaeger-services-final.yaml
+sed -i 's;${IMAGE_JAEGER_ALL_IN_ONE};'${IMAGE_JAEGER_ALL_IN_ONE}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_JAEGER_AGENT};'${IMAGE_JAEGER_AGENT}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_JAEGER_COLLECTOR};'${IMAGE_JAEGER_COLLECTOR}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_JAEGER_QUERY};'${IMAGE_JAEGER_QUERY}';g' jaeger-services-final.yaml

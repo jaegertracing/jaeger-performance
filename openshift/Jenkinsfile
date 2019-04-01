@@ -21,7 +21,7 @@ pipeline {
 
         string(name: 'TESTS_TO_RUN', defaultValue: 'performance,smoke', description: 'Tests to run: performance,smoke')
 
-        choice(name: 'ELASTICSEARCH_PROVIDER', choices: 'es-operator\ntemplate\nexternal', description: 'Elasticsearch provider. es-operator: deployed alsong with jaeger-operator via ES operator, template: use OpenShift template to deploy ES, external: use external ES url')
+        choice(name: 'ELASTICSEARCH_PROVIDER', choices: 'es-operator\ntemplate\nexternal\nnone', description: 'Elasticsearch provider. es-operator: deployed alsong with jaeger-operator via ES operator, template: use OpenShift template to deploy ES, external: use external ES url, none: jaeger all-in-one image will be installed')
         string(name: 'STORAGE_HOST', defaultValue: 'elasticsearch', description: 'Elasticesearch cluster hostname')
         string(name: 'STORAGE_PORT', defaultValue: '9200', description: 'Elsaticsearch cluster port number')
 
@@ -45,6 +45,7 @@ pipeline {
         string(name: 'IMAGE_ELASTICSEARCH_OPERATOR', defaultValue: 'quay.io/openshift/origin-elasticsearch-operator:latest', description: 'Elasticsearch operator image')
         string(name: 'IMAGE_ELASTICSEARCH', defaultValue: 'quay.io/openshift/origin-logging-elasticsearch5:latest', description: 'Elasticsearch cluster image')
         string(name: 'IMAGE_JAEGER_OPERATOR', defaultValue: 'jaegertracing/jaeger-operator:master', description: 'Jaeger operator image')
+        string(name: 'IMAGE_JAEGER_ALL_IN_ONE', defaultValue: 'jaegertracing/all-in-one:latest', description: 'Jaeger services all-in-one Image')
         string(name: 'IMAGE_JAEGER_AGENT', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
         string(name: 'IMAGE_JAEGER_COLLECTOR', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
         string(name: 'IMAGE_JAEGER_QUERY', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')

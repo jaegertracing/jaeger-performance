@@ -62,6 +62,7 @@ sed -i 's;${IMAGE_PERFORMANCE_TEST};'${IMAGE_PERFORMANCE_TEST}';g' performance-t
 sed -i 's;${IMAGE_ELASTICSEARCH_OPERATOR};'${IMAGE_ELASTICSEARCH_OPERATOR}';g' performance-test.yaml
 sed -i 's;${IMAGE_ELASTICSEARCH};'${IMAGE_ELASTICSEARCH}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_OPERATOR};'${IMAGE_JAEGER_OPERATOR}';g' performance-test.yaml
+sed -i 's;${IMAGE_JAEGER_ALL_IN_ONE};'${IMAGE_JAEGER_ALL_IN_ONE}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_AGENT};'${IMAGE_JAEGER_AGENT}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_COLLECTOR};'${IMAGE_JAEGER_COLLECTOR}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_QUERY};'${IMAGE_JAEGER_QUERY}';g' performance-test.yaml

@@ -105,6 +105,8 @@ items:
             value: "${IMAGE_ELASTICSEARCH}"
           - name: IMAGE_JAEGER_OPERATOR
             value: "${IMAGE_JAEGER_OPERATOR}"
+          - name: IMAGE_JAEGER_ALL_IN_ONE
+            value: "${IMAGE_JAEGER_ALL_IN_ONE}"
           - name: IMAGE_JAEGER_AGENT
             value: "${IMAGE_JAEGER_AGENT}"
           - name: IMAGE_JAEGER_COLLECTOR

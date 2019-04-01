@@ -78,6 +78,7 @@ public class TestConfig implements Serializable {
                 .imageElsaticsearch(
                         getStringEnv("IMAGE_ELASTICSEARCH", "registry.centos.org/rhsyseng/elasticsearch:5.6.10"))
                 .imageJaegerOperator(getStringEnv("IMAGE_JAEGER_OPERATOR", "jaegertracing/jaeger-operator:master"))
+                .imageJaegerAllInOne(getStringEnv("IMAGE_JAEGER_ALL_IN_ONE", "jaegertracing/all-in-one:latest"))
                 .imageJaegerAgent(getStringEnv("IMAGE_JAEGER_AGENT", "jaegertracing/jaeger-agent:latest"))
                 .imageJaegerCollector(getStringEnv("IMAGE_JAEGER_COLLECTOR", "jaegertracing/jaeger-collector:latest"))
                 .imageJaegerQuery(getStringEnv("IMAGE_JAEGER_QUERY", "jaegertracing/jaeger-query:latest"))
@@ -186,6 +187,7 @@ public class TestConfig implements Serializable {
     private String imageElsaticsearchOperator;
     private String imageElsaticsearch;
     private String imageJaegerOperator;
+    private String imageJaegerAllInOne;
     private String imageJaegerAgent;
     private String imageJaegerCollector;
     private String imageJaegerQuery;
