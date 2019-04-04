@@ -151,7 +151,7 @@ public class JaegerMetrics {
                 batchesSubmittedProtocolGrpc += _batchesSubmittedProtocolGrpc;
                 spansSubmittedProtocolGrpc += _spansSubmittedProtocolGrpc;
                 spansFailuresTotalGrpc += _spansFailuresTotalGrpc;
-                spansReceivedTotalGrpc += spansReceivedTotalGrpc;
+                spansReceivedTotalGrpc += _spansReceivedTotalGrpc;
                 pacetSizeProtocolCompact += _pacetSizeProtocolCompact;
                 pacetsProcessedTotalProtocolCompact += _pacetsProcessedTotalProtocolCompact;
 
