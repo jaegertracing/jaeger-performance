@@ -97,6 +97,8 @@ items:
             value: "${REPORT_ENGINE_URL}"
           - name: REPORT_ENGINE_LABELS
             value: '${REPORT_ENGINE_LABELS}'
+          - name: REPORT_ENGINE_AGENT_REFERENCE
+            value: '${REPORT_ENGINE_AGENT_REFERENCE}'
           - name: IMAGE_PERFORMANCE_TEST
             value: "${IMAGE_PERFORMANCE_TEST}"
           - name: IMAGE_ELASTICSEARCH_OPERATOR

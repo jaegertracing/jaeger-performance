@@ -72,6 +72,7 @@ public class TestConfig implements Serializable {
                 .jaegerqeControllerUrl(getStringEnv("JAEGERQE_CONTROLLER_URL", "http://localhost:8080"))
                 .reportEngineUrl(getStringEnv("REPORT_ENGINE_URL", "http://localhost:8080"))
                 .reportEngineLabel(getStringEnv("REPORT_ENGINE_LABELS", "{ }"))
+                .reportEngineAgentReference(getStringEnv("REPORT_ENGINE_AGENT_REFERENCE", null))
                 .imagePerformanceTest(getStringEnv("IMAGE_PERFORMANCE_TEST", "jkandasa/jaeger-performance-test:2.2.0"))
                 .imageElsaticsearchOperator(getStringEnv("IMAGE_ELASTICSEARCH_OPERATOR",
                         "quay.io/openshift/origin-elasticsearch-operator:latest"))
@@ -181,6 +182,7 @@ public class TestConfig implements Serializable {
     private String jaegerqeControllerUrl;
     private String reportEngineUrl;
     private String reportEngineLabel;
+    private String reportEngineAgentReference;
 
     // images
     private String imagePerformanceTest;

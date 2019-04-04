@@ -28,4 +28,8 @@ public class JaegerQEControllerClient extends GenericRestClient {
     public void runSpansQuery(Map<String, Object> data) {
         post("/api/spansquery/trigger", data);
     }
+    
+    public void postMqttTopic(Map<String, Object> data) {
+        post("/api/mqtt/post", data);
+    }
 }

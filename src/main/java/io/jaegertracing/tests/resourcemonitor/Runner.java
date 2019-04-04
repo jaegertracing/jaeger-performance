@@ -43,6 +43,25 @@ public class Runner {
         return RUNNING.get();
     }
 
+    private static HashMap<String, Object> getReAgentData(String command) {
+        HashMap<String, Object> data = new HashMap<>();
+        ArrayList<String> resources = new ArrayList<>();
+        resources.add("cpu");
+        resources.add("memory");
+        resources.add("swap");
+
+        data.put("resources", resources);
+
+        data.put("mqttTopic", "re/agent");
+        data.put("agentReference", config.getReportEngineAgentReference());
+        data.put("command", command);
+        data.put("suiteId", ReportFactory.getReSuiteId());
+        data.put("measurementSuffix", "external");
+        data.put("monitorInterval", "15s");
+        data.put("endTime", (config.getSpansReportDurationInSecond() + 120) * 1000L); // duration in milliseconds
+        return data;
+    }
+
     public static void start() {
         if (RUNNING.get()) {
             return;
@@ -50,6 +69,10 @@ public class Runner {
         try {
             updateIps();
             TIMER.schedule(new MonitorResouces(), 10000L, 10 * 1000L);
+            if (config.getReportEngineAgentReference() != null
+                    && config.getReportEngineAgentReference().trim().length() > 0) {
+                ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("start"));
+            }
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         } finally {
@@ -63,6 +86,10 @@ public class Runner {
         }
         try {
             TIMER.cancel();
+            if (config.getReportEngineAgentReference() != null
+                    && config.getReportEngineAgentReference().trim().length() > 0) {
+                ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("stop"));
+            }
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         } finally {

@@ -58,6 +58,7 @@ sed -i 's;${TEST_HA_SETUP};'${TEST_HA_SETUP}';g' performance-test.yaml
 sed -i 's;${JAEGERQE_CONTROLLER_URL};'${JAEGERQE_CONTROLLER_URL}';g' performance-test.yaml
 sed -i 's;${REPORT_ENGINE_URL};'${REPORT_ENGINE_URL}';g' performance-test.yaml
 sed -i 's;${REPORT_ENGINE_LABELS};'${REPORT_ENGINE_LABELS}';g' performance-test.yaml
+sed -i 's;${REPORT_ENGINE_AGENT_REFERENCE};'${REPORT_ENGINE_AGENT_REFERENCE}';g' performance-test.yaml
 sed -i 's;${IMAGE_PERFORMANCE_TEST};'${IMAGE_PERFORMANCE_TEST}';g' performance-test.yaml
 sed -i 's;${IMAGE_ELASTICSEARCH_OPERATOR};'${IMAGE_ELASTICSEARCH_OPERATOR}';g' performance-test.yaml
 sed -i 's;${IMAGE_ELASTICSEARCH};'${IMAGE_ELASTICSEARCH}';g' performance-test.yaml

@@ -38,7 +38,8 @@ pipeline {
 
         string(name: 'JAEGERQE_CONTROLLER_URL', defaultValue: 'http://localhost:8080', description: 'JaegerQE controller URL')
         string(name: 'REPORT_ENGINE_URL', defaultValue: 'http://localhost:8080', description: 'Report Engine URL')
-        string(name: 'REPORT_ENGINE_LABELS', defaultValue: '{ }', description: 'Report Engine custom labels, JSON string, key: value. do escape single quote')
+        string(name: 'REPORT_ENGINE_LABELS', defaultValue: '{}', description: 'Report Engine custom labels, JSON string, key: value. do escape single quote, space not allowed')
+        string(name: 'REPORT_ENGINE_AGENT_REFERENCE', defaultValue: '', description: 'Report Engine agent reference.')
 
         // image details
         string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.0', description: 'Jaeger performance test docker image')
