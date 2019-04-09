@@ -17,7 +17,8 @@
 
 # update namespace details
 JO_NAMESPACE=observability
-ESO_NAMESPACE=observability
+# TODO: we have an issue with ES Operator, it works only on "openshift-logging" namespace
+ESO_NAMESPACE="openshift-logging"
 
 set -x
 
@@ -51,8 +52,6 @@ if [ ${ELASTICSEARCH_PROVIDER} == 'es-operator' ]; then
     # update ES operator image
     sed -i 's;quay.io/openshift/origin-elasticsearch-operator.*;'${IMAGE_ELASTICSEARCH_OPERATOR}';g' es_05-deployment.yaml
     sed -i 's;imagePullPolicy: IfNotPresent.*;imagePullPolicy: Always;g' es_05-deployment.yaml
-    # update namespace for role-bindings
-    sed -i 's;namespace: openshift-logging.*;namespace: '${ESO_NAMESPACE}';g' es_05-deployment.yaml
 
     # delete ES operator
     oc delete -f es_05-deployment.yaml -n ${ESO_NAMESPACE}
