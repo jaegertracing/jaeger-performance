@@ -17,8 +17,7 @@
 
 # update namespace details
 JO_NAMESPACE=observability
-# TODO: we have an issue with ES Operator, it works only on "openshift-logging" namespace
-ESO_NAMESPACE="openshift-logging"
+ESO_NAMESPACE=observability
 
 set -x
 

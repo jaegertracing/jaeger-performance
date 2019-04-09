@@ -49,6 +49,7 @@ public class Runner {
         resources.add("cpu");
         resources.add("memory");
         resources.add("swap");
+        resources.add("jvm,org.elasticsearch.bootstrap.Elasticsearch");
 
         data.put("resources", resources);
 
@@ -58,7 +59,7 @@ public class Runner {
         data.put("suiteId", ReportFactory.getReSuiteId());
         data.put("measurementSuffix", "external");
         data.put("monitorInterval", "15s");
-        data.put("endTime", (config.getSpansReportDurationInSecond() + 120) * 1000L); // duration in milliseconds
+        data.put("endTime", String.valueOf((config.getSpansReportDurationInSecond() + 120) * 1000L)); // duration in milliseconds
         return data;
     }
 
