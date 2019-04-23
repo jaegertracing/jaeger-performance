@@ -31,9 +31,9 @@ sed -i 's/registry.centos.org\/rhsyseng\/elasticsearch:5.6.10/'${IMAGE_ELASTICSE
     importPolicy: \
       insecure: '${STORAGE_IMAGE_INSECURE}'/g' es-cluster-deployment.yaml
 # update node selector label
-sed -i 's;securityContext: {}.*;securityContext: {}   \
-      nodeSelector:                                   \
-        storagetype: elasticsearch;g' es-cluster-deployment.yaml
+#sed -i 's;securityContext: {}.*;securityContext: {}   \
+#      nodeSelector:                                   \
+#        storagetype: elasticsearch;g' es-cluster-deployment.yaml
 
 # remove old deployments
 oc delete -f es-cluster-deployment.yaml --grace-period=1 -n ${OS_NAMESPACE} || true
