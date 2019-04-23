@@ -42,7 +42,7 @@ pipeline {
         string(name: 'REPORT_ENGINE_AGENT_REFERENCE', defaultValue: '', description: 'Report Engine agent reference.')
 
         // image details
-        string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.0', description: 'Jaeger performance test docker image')
+        string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.3', description: 'Jaeger performance test docker image')
         string(name: 'IMAGE_ELASTICSEARCH_OPERATOR', defaultValue: 'quay.io/openshift/origin-elasticsearch-operator:latest', description: 'Elasticsearch operator image')
         string(name: 'IMAGE_ELASTICSEARCH', defaultValue: 'quay.io/openshift/origin-logging-elasticsearch5:latest', description: 'Elasticsearch cluster image')
         string(name: 'IMAGE_JAEGER_OPERATOR', defaultValue: 'jaegertracing/jaeger-operator:master', description: 'Jaeger operator image')
