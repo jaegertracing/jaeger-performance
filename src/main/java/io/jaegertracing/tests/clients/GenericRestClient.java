@@ -84,7 +84,7 @@ public class GenericRestClient {
             Response response = execute(request);
             if (response.isSuccessful()) {
                 String jsonContent = response.body().string();
-                return (Class<?>) getMapper().readValue(jsonContent, clazz);
+                return getMapper().readValue(jsonContent, clazz);
             }
         } catch (IOException ex) {
             logger.error("Exception,", ex);
