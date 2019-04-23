@@ -15,9 +15,9 @@ package io.jaegertracing.tests.clients;
 
 import java.io.File;
 import java.util.List;
+import java.util.Map;
 
 import io.jaegertracing.tests.resourcemonitor.ReMetric;
-
 import okhttp3.MultipartBody;
 import io.jaegertracing.tests.report.model.JaegerTestReport;
 import lombok.extern.slf4j.Slf4j;
@@ -28,8 +28,16 @@ import okhttp3.RequestBody;
 @Slf4j
 public class ReportEngineClient extends GenericRestClient {
 
+    private boolean available = false;
+
     public ReportEngineClient(String hostUrl) {
         super(hostUrl);
+        // update available
+        status();
+    }
+
+    public boolean isAvailable() {
+        return available;
     }
 
     public void addTestData(JaegerTestReport jaegerTestReport) {
@@ -61,6 +69,13 @@ public class ReportEngineClient extends GenericRestClient {
                 .build();
         execute(request);
         logger.debug("File uploaded: {}", file.getAbsolutePath());
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> status() {
+        Map<String, Object> status = (Map<String, Object>) get("/system/status", Map.class);
+        available = status != null ? true : false;
+        return status;
     }
 
 }

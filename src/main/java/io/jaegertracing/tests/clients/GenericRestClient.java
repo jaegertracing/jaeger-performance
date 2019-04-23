@@ -75,7 +75,7 @@ public class GenericRestClient {
         }
     }
 
-    public Class<?> get(String api, Class<?> clazz) {
+    public Object get(String api, Class<?> clazz) {
         try {
             Request request = new Request.Builder()
                     .url(getUrl(api))

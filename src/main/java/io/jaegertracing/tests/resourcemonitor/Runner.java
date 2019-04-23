@@ -72,7 +72,9 @@ public class Runner {
             TIMER.schedule(new MonitorResouces(), 10000L, 10 * 1000L);
             if (config.getReportEngineAgentReference() != null
                     && config.getReportEngineAgentReference().trim().length() > 0) {
-                ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("start"));
+                if (ClientUtils.qeCtlClient().isAvailable()) {
+                    ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("start"));
+                }
             }
         } catch (Exception ex) {
             logger.error("Exception,", ex);
@@ -89,7 +91,9 @@ public class Runner {
             TIMER.cancel();
             if (config.getReportEngineAgentReference() != null
                     && config.getReportEngineAgentReference().trim().length() > 0) {
-                ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("stop"));
+                if (ClientUtils.qeCtlClient().isAvailable()) {
+                    ClientUtils.qeCtlClient().postMqttTopic(getReAgentData("stop"));
+                }
             }
         } catch (Exception ex) {
             logger.error("Exception,", ex);
@@ -292,9 +296,13 @@ public class Runner {
 
         @Override
         public void run() {
+            ReportEngineClient reClient = ClientUtils.newReClient();
+            if (!reClient.isAvailable()) {
+                logger.warn("Report engine server not available");
+                return;
+            }
             timestamp = System.currentTimeMillis();
             List<ReMetric> metrics = new ArrayList<>();
-            ReportEngineClient reClient = ClientUtils.newReClient();
             try {
                 // collector metrics
                 for (String ip : DOMAIN_IPS.get("collector")) {

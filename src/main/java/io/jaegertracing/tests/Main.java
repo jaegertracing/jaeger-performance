@@ -30,10 +30,9 @@ import org.junit.runner.Result;
 
 import com.codahale.metrics.Timer;
 
-import io.jaegertracing.tests.resourcemonitor.Runner;
+import io.jaegertracing.tests.clients.ClientUtils;
 
-import io.jaegertracing.tests.clients.JaegerQEControllerClient;
-import io.jaegertracing.tests.clients.ReportEngineClient;
+import io.jaegertracing.tests.resourcemonitor.Runner;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.reporters.RemoteReporter;
 import io.jaegertracing.internal.samplers.ConstSampler;
@@ -49,8 +48,6 @@ import lombok.extern.slf4j.Slf4j;
 public class Main {
     static final String SERVICE_NAME = "performance-test";
     static final String TRACER_PREFIX = "tracer_";
-    // trigger external spans reporter
-    JaegerQEControllerClient qeClient = null;
 
     public static void main(String[] args) throws Exception {
         Main instance = new Main();
@@ -69,8 +66,6 @@ public class Main {
         //config.setSpansCount(100);
         //config.setQueryInterval(30);
         //config.setSpansCountFrom("jaeger-query");
-
-        qeClient = new JaegerQEControllerClient(config.getJaegerqeControllerUrl());
 
         // wait for jaeger agent to get ready
         if (config.getRunningOnOpenshift()) {
@@ -96,12 +91,11 @@ public class Main {
     }
 
     public void execute() throws Exception {
-        ReportEngineClient reClient = new ReportEngineClient(config.getReportEngineUrl());
-
         if (config.isPerformanceTestEnabled()) {
             // update report status to report engine
-            reClient.addTestData(ReportFactory.getFinalReport(config));
-
+            if (ClientUtils.reClient().isAvailable()) {
+                ClientUtils.reClient().addTestData(ReportFactory.getFinalReport(config));
+            }
             // start metrics collector
             Runner.start();
 
@@ -200,7 +194,7 @@ public class Main {
             data.put("startTime", System.currentTimeMillis() + (15 * 1000L)); // 15 seconds from now
             waitTime += 20000L;
 
-            qeClient.startSpansReporter(data);
+            ClientUtils.qeCtlClient().startSpansReporter(data);
             logger.info("Waiting to complte spans report. Wait time:{} ms", waitTime);
 
             // run query
@@ -210,7 +204,7 @@ public class Main {
                 do {
                     data.put("jaegerQueryIteration", iteration);
                     data.put("jaegerQueryOperation", "1");
-                    qeClient.runSpansQuery(data);
+                    ClientUtils.qeCtlClient().runSpansQuery(data);
                     Thread.sleep(config.getQueryInterval() * 1000L);
                     iteration++;
                     // update spans count by api query

@@ -17,8 +17,16 @@ import java.util.Map;
 
 public class JaegerQEControllerClient extends GenericRestClient {
 
+    private boolean available = false;
+
     public JaegerQEControllerClient(String hostUrl) {
         super(hostUrl);
+        // update available
+        status();
+    }
+
+    public boolean isAvailable() {
+        return available;
     }
 
     public void startSpansReporter(Map<String, Object> data) {
@@ -28,8 +36,15 @@ public class JaegerQEControllerClient extends GenericRestClient {
     public void runSpansQuery(Map<String, Object> data) {
         post("/api/spansquery/trigger", data);
     }
-    
+
     public void postMqttTopic(Map<String, Object> data) {
         post("/api/mqtt/post", data);
+    }
+
+    @SuppressWarnings("unchecked")
+    public Map<String, Object> status() {
+        Map<String, Object> status = (Map<String, Object>) get("/api/status", Map.class);
+        available = status != null ? true : false;
+        return status;
     }
 }

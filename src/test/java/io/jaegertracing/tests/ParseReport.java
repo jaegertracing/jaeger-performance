@@ -21,7 +21,7 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
-import io.jaegertracing.tests.clients.ReportEngineClient;
+import io.jaegertracing.tests.clients.ClientUtils;
 
 import io.jaegertracing.tests.report.model.JaegerMetrics;
 import io.jaegertracing.tests.model.TestConfig;
@@ -89,8 +89,6 @@ public class ParseReport {
 
             _REPORT.getData().getMetric().setJaegerMetrics(jaegerMetrics);
 
-            // send it to report engine
-            ReportEngineClient reClient = new ReportEngineClient(config.getReportEngineUrl());
             _REPORT.setReady(true);
             _REPORT.getData().getConfig().getJenkins().update();
 
@@ -122,14 +120,18 @@ public class ParseReport {
             // update custom labels from user input
             _REPORT.getLabels().putAll(ReportEngineUtils.labels(config.getReportEngineLabel()));
 
-            reClient.updateTestData(_REPORT);
+            if (ClientUtils.reClient().isAvailable()) {
+                ClientUtils.reClient().updateTestData(_REPORT);
+            }
 
             // upload files
             List<File> filesList = (List<File>) FileUtils.listFiles(new File(config.getLogsDirectory()),
                     TrueFileFilter.INSTANCE, TrueFileFilter.INSTANCE);
             for (File file : filesList) {
                 try {
-                    reClient.uploadFile(_REPORT.getId(), file);
+                    if (ClientUtils.reClient().isAvailable()) {
+                        ClientUtils.reClient().uploadFile(_REPORT.getId(), file);
+                    }
                 } catch (Exception ex) {
                     logger.error("Failed to upload a file:{},", file.getName(), ex);
                 }
