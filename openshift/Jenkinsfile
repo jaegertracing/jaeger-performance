@@ -17,7 +17,7 @@ pipeline {
         string(name: 'OS_URL', defaultValue: '', description: 'Openshift url')
         string(name: 'OS_USERNAME', defaultValue: '', description: 'Openshift login username')
         password(name: 'OS_PASSWORD', defaultValue: '', description: 'Openshift login password')
-        string(name: 'OS_NAMESPACE', defaultValue: 'jaeger-test2', description: 'Openshift namespace')
+        string(name: 'OS_NAMESPACE', defaultValue: 'jaeger-pipeline', description: 'Openshift namespace')
 
         string(name: 'TESTS_TO_RUN', defaultValue: 'performance,smoke', description: 'Tests to run: performance,smoke')
 
