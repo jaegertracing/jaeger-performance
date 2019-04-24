@@ -1,5 +1,5 @@
 pipeline {
-     agent { label 'jaeger-qe-java' }
+    agent { label JENKINS_AGENT_LABEL }
     options {
         disableConcurrentBuilds()
         /*timeout(time: 8, unit: 'HOURS')*/
@@ -11,78 +11,105 @@ pipeline {
     }
     parameters {
         string(name: 'JOB_REFERENCE', defaultValue: '', description: 'Jenkins job reference')
+        string(name: 'JAEGER_SERVICE_NAME', defaultValue: 'jaegerqe', description: 'Jaeger services prefix name')
 
+        // OpenShift details
         string(name: 'OS_URL', defaultValue: '', description: 'Openshift url')
         string(name: 'OS_USERNAME', defaultValue: '', description: 'Openshift login username')
         password(name: 'OS_PASSWORD', defaultValue: '', description: 'Openshift login password')
-        string(name: 'OS_NAMESPACE', defaultValue: 'jaeger-test2', description: 'Openshift namespace')
-        booleanParam(name: 'INSTALL_JAEGER_SERVICES', defaultValue: true, description: 'Install Jaeger services')
+        string(name: 'OS_NAMESPACE', defaultValue: 'jaeger-pipeline', description: 'Openshift namespace')
 
         string(name: 'TESTS_TO_RUN', defaultValue: 'performance,smoke', description: 'Tests to run: performance,smoke')
-        string(name: 'PERFORMANCE_TEST_DATA', defaultValue: 'quick,165', description: 'Performance test data[type,data]: type can be:"quick" or "long", for "quick": delay in miliseconds, for "long": duration in seconds')
+
+        choice(name: 'ELASTICSEARCH_PROVIDER', choices: 'es-operator\ntemplate\nexternal\nnone', description: 'Elasticsearch provider. es-operator: deployed alsong with jaeger-operator via ES operator, template: use OpenShift template to deploy ES, external: use external ES url, none: jaeger all-in-one image will be installed')
+        string(name: 'STORAGE_HOST', defaultValue: 'elasticsearch', description: 'Elasticesearch cluster hostname')
+        string(name: 'STORAGE_PORT', defaultValue: '9200', description: 'Elsaticsearch cluster port number')
+
+        booleanParam(name: 'PRE_INSTALL_JAEGER_OPERATOR', defaultValue: true, description: 'Install Jaeger operator')
+        booleanParam(name: 'PRE_INSTALL_JAEGER_SERVICES', defaultValue: true, description: 'Install Jaeger services')
+        booleanParam(name: 'PRE_INSTALL_REPORTER_NODES', defaultValue: false, description: 'If you like to deploy spans reporter nodes, check this box')
+        string(name: 'REPORTER_NODE_REPLICA_COUNT', defaultValue: '5', description: 'Reporters node replica count')
+        string(name: 'REPORTER_REFERENCE', defaultValue: 'global', description: 'Reporter reference')
+        booleanParam(name: 'POST_DELETE_JAEGER_SERVICES', defaultValue: true, description: 'Delete the Jaeger services at end of test')
+        booleanParam(name: 'POST_DELETE_TEST_JOBS', defaultValue: true, description: 'Delete test job pods at the end of test')
+        booleanParam(name: 'POST_DELETE_REPORTER_NODES', defaultValue: false, description: 'Delete spans reporter pods/nodes at the end of test')
+
         booleanParam(name: 'TEST_HA_SETUP', defaultValue: false, description: 'Execute HA setup. Kill es, collector pods')
-        string(name: 'NUMBER_OF_TRACERS', defaultValue: '100', description: 'Number of tracers')
-        string(name: 'NUMBER_OF_SPANS', defaultValue: '4000', description: 'Number of spans per tracer')
-        string(name: 'QUERY_LIMIT', defaultValue: '20000', description: 'Maximum items limit on query execution')
+
+        string(name: 'JAEGERQE_CONTROLLER_URL', defaultValue: 'http://localhost:8080', description: 'JaegerQE controller URL')
+        string(name: 'REPORT_ENGINE_URL', defaultValue: 'http://localhost:8080', description: 'Report Engine URL')
+        string(name: 'REPORT_ENGINE_LABELS', defaultValue: '{}', description: 'Report Engine custom labels, JSON string, key: value. do escape single quote, space not allowed')
+        string(name: 'REPORT_ENGINE_AGENT_REFERENCE', defaultValue: '', description: 'Report Engine agent reference.')
+
+        // image details
+        string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.3', description: 'Jaeger performance test docker image')
+        string(name: 'IMAGE_ELASTICSEARCH_OPERATOR', defaultValue: 'quay.io/openshift/origin-elasticsearch-operator:latest', description: 'Elasticsearch operator image')
+        string(name: 'IMAGE_ELASTICSEARCH', defaultValue: 'quay.io/openshift/origin-logging-elasticsearch5:latest', description: 'Elasticsearch cluster image')
+        string(name: 'IMAGE_JAEGER_OPERATOR', defaultValue: 'jaegertracing/jaeger-operator:master', description: 'Jaeger operator image')
+        string(name: 'IMAGE_JAEGER_ALL_IN_ONE', defaultValue: 'jaegertracing/all-in-one:latest', description: 'Jaeger services all-in-one Image')
+        string(name: 'IMAGE_JAEGER_AGENT', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
+        string(name: 'IMAGE_JAEGER_COLLECTOR', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
+        string(name: 'IMAGE_JAEGER_QUERY', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')
+
+        // reporter node details
+        booleanParam(name: 'USE_INTERNAL_REPORTER', defaultValue: true, description: 'If you like to use internal spans reporter, check this box')
+        string(name: 'NODE_COUNT_SPANS_REPORTER', defaultValue: '1', description: 'Number of nodes should be used to generate spans')
+        string(name: 'NODE_COUNT_QUERY_RUNNER', defaultValue: '1', description: 'Number of nodes should be used to run jaeger api queries')
+        // mqtt broker details for reporters
+        string(name: 'MSG_BROKER_HOST', defaultValue: 'localhost', description: 'Hostname or ip of the message queue broker host')
+        string(name: 'MSG_BROKER_PORT', defaultValue: '1883', description: 'Message queue broker port')
+        string(name: 'MSG_BROKER_USER', defaultValue: 'guest', description: 'Message queue broker username')
+        password(name: 'MSG_BROKER_PASSWORD', defaultValue: 'guest', description: 'Message queue broker password')
+
+        // tracer details
+        string(name: 'NUMBER_OF_TRACERS', defaultValue: '10', description: 'Number of tracers')
+        string(name: 'NUMBER_OF_SPANS', defaultValue: '10', description: 'Number of spans per tracer')
+        string(name: 'REPORT_SPANS_DURATION', defaultValue: '10m', description: 'How long want to report spans? eg: 50s, 10m, 2h, 2d. s-second, m-minute, h-hour, d-day')
+        choice(name: 'SPANS_COUNT_FROM', choices: 'storage\njaeger-query', description: 'how to check spans count from backend. direct storage access or via jaeger query service?')
+        // query details
+        string(name: 'QUERY_LIMIT', defaultValue: '2000', description: 'Maximum items limit on query execution')
         string(name: 'QUERY_SAMPLES', defaultValue: '5', description: 'Number of times the same should be executed')
-        string(name: 'QUERY_INTERVAL', defaultValue: '-1', description: 'Query sets will be executed in this interval. If you want to only once at the end, pass it as -1')
-
-        choice(choices: 'http\nudp', name: 'SENDER', description: 'In which mode spans should be sent. http - collector, udp - agent')
-        choice(choices: 'tchannel\ngrpc', name: 'REPORTER_TYPE', description: 'Reporter type to use e.g. tchannel, grpc (default "tchannel")')
+        string(name: 'QUERY_INTERVAL', defaultValue: '-1', description: 'Query sets will be executed in this interval(seconds). If you want to only once at the end, pass it as -1')
+        // agent, collector details
+        choice(name: 'SENDER', choices: 'udp\nhttp', description: 'In which mode spans should be sent. http - collector, udp - agent')
+        choice(name: 'REPORTER_TYPE', choices: 'grpc\ntchannel', description: 'Jaeger collector reporter type to use e.g. tchannel, grpc (default "tchannel")')
+        choice(name: 'METRICS_BACKEND', choices: 'expvar\nprometheus\nnone', description: 'Metrics backend for jaeger services, expvar, prometheus, none')
         
-        choice(choices: 'elasticsearch\ncassandra',  name: 'STORAGE_TYPE', description: 'Type of backend should be used to store spans')
-        choice(choices: 'storage\njaeger-query',  name: 'SPANS_COUNT_FROM', description: 'how to check spans count from backend. direct storage access or via jaeger query service?')
-        string(name: 'STORAGE_HOST', defaultValue: 'elasticsearch', description: 'Storage hostname, for cassandra: cassandra')
-        string(name: 'STORAGE_PORT', defaultValue: '9200', description: 'Storage host port number')
-        string(name: 'STORAGE_KEYSPACE', defaultValue: 'jaeger_v1_dc1', description: 'Applicable for cassandra')
-
-        string(name: 'JAEGER_QUERY_HOST', defaultValue: 'jaeger-query', description: 'Jaeger query service hostname')
-        string(name: 'JAEGER_QUERY_PORT', defaultValue: '80', description: 'Jaeger query service host port number')
-        string(name: 'JAEGER_COLLECTOR_HOST', defaultValue: 'jaeger-collector', description: 'Jaeger collector service hostname')
-        string(name: 'JAEGER_COLLECTOR_PORT', defaultValue: '14268', description: 'Jaeger collector service host port number, http:14268, tchannel:14267, grpc:14250')
-        string(name: 'JAEGER_AGENT_HOST', defaultValue: 'localhost', description: 'Jaeger agent service hostname')
-        string(name: 'JAEGER_AGENT_PORT', defaultValue: '6831', description: 'Jaeger agent service host port number')
         string(name: 'JAEGER_AGENT_QUEUE_SIZE', defaultValue: '1000', description: 'Jaeger agent, length of the queue for the UDP server')
         string(name: 'JAEGER_AGENT_WORKERS', defaultValue: '10', description: 'Jaeger agent, how many workers the processor should run')
         
-        string(name: 'JAEGER_FLUSH_INTERVAL', defaultValue: '200', description: 'Jaeger java client library flush interval')
-        string(name: 'JAEGER_MAX_POCKET_SIZE', defaultValue: '0', description: 'Jaeger java client library max pocket size')
-        string(name: 'JAEGER_MAX_QUEUE_SIZE', defaultValue: '10000', description: 'Jaeger java client library max queue size')
+        string(name: 'JAEGER_CLIENT_FLUSH_INTERVAL', defaultValue: '200', description: 'Jaeger java client library flush interval')
+        string(name: 'JAEGER_CLIENT_MAX_POCKET_SIZE', defaultValue: '0', description: 'Jaeger java client library max pocket size')
+        string(name: 'JAEGER_CLIENT_MAX_QUEUE_SIZE', defaultValue: '10000', description: 'Jaeger java client library max queue size')
 
-        string(name: 'COLLECTOR_PODS', defaultValue: '1', description: 'The number of collector pods')
+        string(name: 'COLLECTOR_REPLICA_COUNT', defaultValue: '1', description: 'The number of collector pods')
         string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '2000', description: '--collector.queue-size')
         string(name: 'COLLECTOR_NUM_WORKERS', defaultValue: '50', description: '--collector.num-workers')
+        string(name: 'COLLECTOR_ES_BULK_SIZE', defaultValue: '5000000', description: '--es.bulk.size')
+        string(name: 'COLLECTOR_ES_BULK_WORKERS', defaultValue: '1', description: '--es.bulk.workers')
+        string(name: 'COLLECTOR_ES_BULK_FLUSH_INTERVAL', defaultValue: '200ms', description: '--es.bulk.flush-interval')
+        booleanParam(name: 'COLLECTOR_ES_TAGS_AS_FIELDS', defaultValue: false, description: 'Store all span and process tags as object fields. If true .tags-as-fields.config-file is ignored. Binary tags are always stored as nested objects.')
 
-        string(name: 'QUERY_STATIC_FILES', defaultValue: '', description: '--query.static-files')
+        string(name: 'JAEGER_QUERY_STATIC_FILES', defaultValue: '', description: '--query.static-files')
 
         string(name: 'ES_MEMORY', defaultValue: '1Gi', description: 'Memory for each elasticsearch pod')
-        string(name: 'ES_BULK_SIZE', defaultValue: '5000000', description: '--es.bulk.size')
-        string(name: 'ES_BULK_WORKERS', defaultValue: '1', description: '--es.bulk.workers')
-        string(name: 'ES_BULK_FLUSH_INTERVAL', defaultValue: '200ms', description: '--es.bulk.flush-interval')
 
-        string(name: 'STORAGE_IMAGE', defaultValue: 'registry.centos.org/rhsyseng/elasticsearch:5.6.10', description: 'Storage image, can be ElasticSearch or cassandra.')
-        booleanParam(name: 'STORAGE_IMAGE_INSECURE', defaultValue: false, description: 'If image location not-secured(HTTP), check this box')
-        string(name: 'JAEGER_AGENT_IMAGE', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
-        string(name: 'JAEGER_COLLECTOR_IMAGE', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
-        string(name: 'JAEGER_QUERY_IMAGE', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')
-        string(name: 'PERFORMANCE_TEST_IMAGE', defaultValue: 'jkandasa/jaeger-performance-test:2.0.0', description: 'Jaeger performance test docker image')
+        // log level
+        string(name: 'LOG_LEVEL_JAEGER_AGENT', defaultValue: 'info', description: 'Jaeger agent log level: debug, info, warn, error, fatal')
+        string(name: 'LOG_LEVEL_JAEGER_COLLECTOR', defaultValue: 'info', description: 'Jaeger collector log level: debug, info, warn, error, fatal')
+        string(name: 'LOG_LEVEL_JAEGER_OPERATOR', defaultValue: 'debug', description: 'Jaeger operator log level: debug, info, warn, error, fatal')
+        string(name: 'LOG_LEVEL_JAEGER_QUERY', defaultValue: 'info', description: 'Jaeger query log level: debug, info, warn, error, fatal')
 
-        booleanParam(name: 'DELETE_JAEGER_AT_END', defaultValue: true, description: 'Delete Jaeger instance at end of the test')
-        booleanParam(name: 'DELETE_JOB_AT_END', defaultValue: true, description: 'Delete test pods at end of the test')      
+        // resource limits
+        string(name: 'RESO_LMT_AGENT_CPU', defaultValue: '200m', description: 'Jaeger agent cpu limit')
+        string(name: 'RESO_LMT_AGENT_MEM', defaultValue: '128Mi', description: 'Jaeger agent memory limit')
+        string(name: 'RESO_LMT_COLLECTOR_CPU', defaultValue: '500m', description: 'Jaeger collector cpu limit')
+        string(name: 'RESO_LMT_COLLECTOR_MEM', defaultValue: '512Mi', description: 'Jaeger collector memory limit')
+        string(name: 'RESO_LMT_QUERY_CPU', defaultValue: '500m', description: 'Jaeger query cpu limit')
+        string(name: 'RESO_LMT_QUERY_MEM', defaultValue: '512Mi', description: 'Jaeger query memory limit')
+        
     }
     stages {
-        stage('Update default values') {
-            steps {
-                script {
-                    displayName=params.SENDER + " " + params.COLLECTOR_PODS + " collectors pods"
-                    if(env.REPORTER_TYPE == "grpc"){
-                        sh '''
-                            export JAEGER_COLLECTOR_PORT_POD="14250"
-                        '''
-                    }
-                }
-            }
-        }
         stage('Mandatory fields check and login') {
             steps {
                 sh '''
@@ -90,81 +117,71 @@ pipeline {
                 '''
             }
         }
-        stage('Delete Old Job') {
+        stage('Delete old test jobs') {
             steps {
                 sh 'oc delete job,template,pod -l group=jaeger-performance-test -n ${OS_NAMESPACE} || true'
-                sh 'oc delete job jaeger-standalone-performance-tests -n ${OS_NAMESPACE} || true'
-            }
-        }
-        stage('Delete Jaeger') {
-            when {
-                expression { params.INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                sh 'oc delete all,template,daemonset,configmap -l jaeger-infra -n ${OS_NAMESPACE} || true'
-                sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1 -n ${OS_NAMESPACE} || true'
             }
         }
         stage('Cleanup, checkout, build') {
             steps {
                 deleteDir()
                 checkout scm
+                sh 'mkdir -p logs/'
                 sh 'ls -alF'
             }
         }
-        stage('deploy Cassandra') {
+        stage('deploy Jaeger operator') {
             when {
-                expression { params.STORAGE_TYPE == 'cassandra' && params.INSTALL_JAEGER_SERVICES }
+                expression { params.PRE_INSTALL_JAEGER_OPERATOR }
             }
             steps {
-                sh '''
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/cassandra.yml --output cassandra.yml
-                    oc create --filename cassandra.yml -n ${OS_NAMESPACE}
-                '''
+                sh './openshift/scripts/deploy_jaeger_operator.sh'
             }
         }
-        stage('deploy ElasticSearch') {
+        stage('deploy elasticsearch cluster via template') {
             when {
-                expression { params.STORAGE_TYPE == 'elasticsearch' && params.INSTALL_JAEGER_SERVICES }
+                expression { params.ELASTICSEARCH_PROVIDER == 'template' && params.PRE_INSTALL_JAEGER_SERVICES }
             }
             steps {
-                sh ' ./openshift/scripts/execute-es-cluster-deployment.sh ${OS_NAMESPACE}'
+                sh './openshift/scripts/deploy_es_cluster.sh ${OS_NAMESPACE}'
             }
         }
-        stage('deploy Jaeger with Cassandra') {
+        stage('Deploy jaeger services') {
             when {
-                expression { params.STORAGE_TYPE == 'cassandra' && params.INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                sh '''
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/configmap-cassandra.yml --output configmap-cassandra.yml
-                    oc create -f ./configmap-cassandra.yml
-                    curl https://raw.githubusercontent.com/jaegertracing/jaeger-openshift/master/production/jaeger-production-template.yml --output jaeger-production-template.yml
-                    sed -i 's/jaegertracing\\/jaeger-collector:${IMAGE_VERSION}/'${JAEGER_COLLECTOR_IMAGE}'/g' jaeger-production-template.yml
-                    sed -i 's/jaegertracing\\/jaeger-query:${IMAGE_VERSION}/'${JAEGER_QUERY_IMAGE}'/g' jaeger-production-template.yml
-                    grep "image:" jaeger-production-template.yml
-                    ./openshift/scripts/updateTemplateForCassandra.sh ${OS_NAMESPACE}
-                    oc process  ${DEPLOYMENT_PARAMETERS} -f jaeger-production-template.yml  | oc create -n ${PROJECT_NAME} -f -
-                '''
-            }
-        }
-        stage('deploy Jaeger with ElasticSearch') {
-            when {
-                expression { params.STORAGE_TYPE == 'elasticsearch' && params.INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                sh './openshift/scripts/deploy_jaeger_elasticsearch.sh ${OS_NAMESPACE}'
-            }
-        }
-        stage('Wait for Jaeger Deployment') {
-            when {
-                expression { params.INSTALL_JAEGER_SERVICES }
+                expression { params.PRE_INSTALL_JAEGER_SERVICES }
             }
             steps {
                 sh  '''
+                    ./openshift/scripts/deploy_jaeger_services.sh ${OS_NAMESPACE}
                     # NAMESPACE SERVICE_NAME MAX_WAIT_TIME
-                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} jaeger-query 60
-                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} jaeger-collector 60
+                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-query 60
+                    ./openshift/scripts/wait_for_service.sh ${OS_NAMESPACE} ${JAEGER_SERVICE_NAME}-collector 60
+                '''
+            }
+        }
+        stage('Deploy jaeger spans reporter') {
+            when {
+                expression { !params.USE_INTERNAL_REPORTER && params.PRE_INSTALL_REPORTER_NODES }
+            }
+            steps {
+                sh '''
+                    # delete existing spans reporting nodes
+                    oc delete job,template,pod,deployment,service -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}
+                    # create spans reporting nodes
+                    curl https://raw.githubusercontent.com/Kiali-QE/jaegerspans-reporter/master/openshift-jaeger-operator-template.yml --output jaeger_spans_reporter.yml
+                    oc process -f jaeger_spans_reporter.yml                                                             \
+                        -p=MQTT_BROKER_HOST=${MSG_BROKER_HOST}                                                          \
+                        -p=MQTT_BROKER_PORT=${MSG_BROKER_PORT}                                                          \
+                        -p=MQTT_BROKER_USER=${MSG_BROKER_USER}                                                          \
+                        -p=MQTT_BROKER_PASSWORD=${MSG_BROKER_PASSWORD}                                                  \
+                        -p=REPLICA_COUNT=${REPORTER_NODE_REPLICA_COUNT}                                                 \
+                        -p=MY_REFERENCE=${REPORTER_REFERENCE} > jaeger_spans_reporter_update.yml
+                    oc create --filename jaeger_spans_reporter_update.yml -n ${OS_NAMESPACE}
+                    mv jaeger_spans_reporter_update.yml logs/
+                    rm jaeger_spans_reporter.yml
+
+                    # sleep 60 seconds to get started reporter nodes
+                    sleep 60
                 '''
             }
         }
@@ -173,28 +190,36 @@ pipeline {
                 sh '''
                     # logs will be stored in this location
                     export LOGS_DIRECTORY=$PWD/logs
-                    sleep 60  # wait sometime, to get other setup ready
+                    # sleep 60  # wait sometime, to get other setup ready
                     ./openshift/scripts/run_performance_test.sh
                     sleep 30  # wait for 30 seconds to create container
+
+                    # maximum wait duration, 2 hours
+                    _TEST_DURATION=7200
+
+                    # check spans duration, if contains 'h' hour, set test duration as 48 hours
+                    # this can be a long run test
+                    if [[ ${REPORT_SPANS_DURATION} = *h* ]]; then
+                        _TEST_DURATION=172800
+                    fi
+
                     # wait_for_pods_status.sh NAMESPACE POD_FILTER WAIT_FOR_STATUS MAX_WAIT_TIME
-                    # add extra 5 minutes on maximum wait time
-                    # get test type and duration
-                    _TEST_DATA=(${PERFORMANCE_TEST_DATA//,/ })
-                    if [ ${_TEST_DATA[0]} == 'long' ];then
-                        _TEST_DURATION=${_TEST_DATA[1]}
-                    else
-                        # if it is a qucik run define duration as 30 minutes maximum
-                        _TEST_DURATION=1800
-                    fi
+
                     if ${TEST_HA_SETUP};then
-                        ./openshift/scripts/wait_for_pods_status_with_ha.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" `expr ${_TEST_DURATION} + 1800`
+                        ./openshift/scripts/wait_for_pods_status_with_ha.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
                     else
-                        ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" `expr ${_TEST_DURATION} + 1800`
+                        ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
                     fi
+
                     # copy log files
                     ./openshift/scripts/copy-log-file.sh  ${OS_NAMESPACE} "app=jaeger-performance-test-job" "jaeger-performance-test"
                     ./openshift/scripts/copy-log-file.sh  ${OS_NAMESPACE} "app=jaeger-performance-test-job" "jaeger-agent"
                     ls -lh logs/
+
+                    # collect all the logs
+                    ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
+                    export LOGS_COLLECTED="true"
+
                     mvn clean test
                 '''
             }
@@ -202,29 +227,25 @@ pipeline {
         stage('Collect logs'){
             steps{
                 sh '''
-                  ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
-                  export LOGS_COLLECTED="true"
+                  # ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
+                  # export LOGS_COLLECTED="true"
                   '''
             }
         }
-        stage('Delete Jaeger at end') {
+        stage('Delete test jobs') {
             when {
-                expression { params.DELETE_JAEGER_AT_END && params.INSTALL_JAEGER_SERVICES }
-            }
-            steps {
-                script {
-                    sh 'oc delete -f https://raw.githubusercontent.com/RHsyseng/docker-rhel-elasticsearch/5.x/es-cluster-deployment.yml --grace-period=1 -n ${OS_NAMESPACE} || true'
-                    sh 'oc delete all,template,daemonset,configmap -l jaeger-infra -n ${OS_NAMESPACE} || true'
-                }
-            }
-        }
-        stage('Delete Job at end') {
-            when {
-                expression { params.DELETE_JOB_AT_END  }
+                expression { params.POST_DELETE_JOBS }
             }
             steps {
                 sh 'oc delete job,template,pod -l group=jaeger-performance-test -n ${OS_NAMESPACE}'
-                sh 'oc delete job jaeger-standalone-performance-tests -n ${OS_NAMESPACE} || true'
+            }
+        }
+        stage('Delete jaeger spans reporter pods') {
+            when {
+                expression { params.POST_DELETE_REPORTER_NODES }
+            }
+            steps {
+                sh 'oc delete job,template,pod,deployment -l group=jaeger-spans-reporter-tool -n ${OS_NAMESPACE}'
             }
         }
     }

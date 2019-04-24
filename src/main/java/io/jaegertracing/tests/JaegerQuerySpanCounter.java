@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -50,11 +50,8 @@ public class JaegerQuerySpanCounter extends UntilNoChangeCounter {
 
         String queryUrl = "http://" + config.getJaegerQueryHost() + ":" + config.getJaegerQueryPort();
         long limit = -1;
-        if (config.isPerformanceTestQuickRunEnabled()) {
-            limit = config.getSpansCount();
-        } else {
-            limit = config.getSpansCount() * config.getPerformanceTestDuration();
-        }
+
+        limit = config.getNumberOfSpans() * config.getSpansReportDurationInSecond();
 
         Timer jaegerQueryTimer = ReportFactory.timer("jaeger-query-span-counter");
 

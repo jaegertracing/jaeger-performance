@@ -11,24 +11,25 @@
  * or implied. See the License for the specific language governing permissions and limitations under
  * the License.
  */
-package io.jaegertracing.tests.report.model;
+package io.jaegertracing.tests.resourcemonitor;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import lombok.Data;
-
-import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.Getter;
+import lombok.Builder;
+import lombok.Builder.Default;
 
+@Builder
+@Getter
 @ToString
-@Data
-@NoArgsConstructor
-public class MetricReport {
-    private List<TimerModel> timers = new ArrayList<>();
-    private List<MeterModel> meters = new ArrayList<>();
-    private List<HistogramModel> histograms = new ArrayList<>();
-    private List<BaseModel> counters = new ArrayList<>();
-    private List<BaseModel> gauges = new ArrayList<>();
-    private JaegerMetrics jaegerMetrics = new JaegerMetrics();
+public class ReMetric {
+    private String suiteId;
+    private String measurementSuffix;
+    private Long timestamp;
+    @Default
+    private Map<String, String> labels = new HashMap<>();
+    @Default
+    private Map<String, Object> data = new HashMap<>();
 }

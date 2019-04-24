@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -27,6 +27,10 @@ public class TestUtils {
 
     public static Integer getIntegerEnv(String key, String defaultValue) {
         return Integer.valueOf(getStringEnv(key, defaultValue));
+    }
+
+    public static Long getLongEnv(String key, String defaultValue) {
+        return Long.valueOf(getStringEnv(key, defaultValue));
     }
 
     public static String getStringEnv(String key, String defaultValue) {

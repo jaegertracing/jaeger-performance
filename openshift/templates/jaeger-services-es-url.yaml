@@ -1,0 +1,87 @@
+#
+# Copyright 2018-2019 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+apiVersion: jaegertracing.io/v1
+kind: Jaeger
+metadata:
+  name: ${JAEGER_SERVICE_NAME}
+spec:
+  ingress:
+    security: none
+  strategy: production
+  collector:
+    replicas: ${COLLECTOR_REPLICA_COUNT}
+    image: ${IMAGE_JAEGER_COLLECTOR}
+    resources:
+      requests:
+        cpu: "${RESO_LMT_COLLECTOR_CPU}"
+        memory: "${RESO_LMT_COLLECTOR_MEM}"
+      limits:
+        cpu: "${RESO_LMT_COLLECTOR_CPU}"
+        memory: "${RESO_LMT_COLLECTOR_MEM}"
+    options:
+      log-level: ${LOG_LEVEL_JAEGER_COLLECTOR}
+      metrics-backend: ${METRICS_BACKEND}
+      collector:
+        num-workers: ${COLLECTOR_NUM_WORKERS}
+        queue-size: ${COLLECTOR_QUEUE_SIZE}
+      es:
+        bulk:
+          size: ${COLLECTOR_ES_BULK_SIZE}
+          workers: ${COLLECTOR_ES_BULK_WORKERS}
+          flush-interval: ${COLLECTOR_ES_BULK_FLUSH_INTERVAL}
+        tags-as-fields:
+          all: ${COLLECTOR_ES_TAGS_AS_FIELDS}
+  query:
+    replicas: 1
+    image: ${IMAGE_JAEGER_QUERY}
+    resources:
+      requests:
+        cpu: "${RESO_LMT_QUERY_CPU}"
+        memory: "${RESO_LMT_QUERY_MEM}"
+      limits:
+        cpu: "${RESO_LMT_QUERY_CPU}"
+        memory: "${RESO_LMT_QUERY_MEM}"
+    options:
+      log-level: ${LOG_LEVEL_JAEGER_QUERY}
+      metrics-backend: ${METRICS_BACKEND}
+      query:
+        port: 16686
+        static-files: ${QUERY_STATIC_FILES}
+  agent:
+    strategy: sidecar
+    image: ${IMAGE_JAEGER_AGENT}
+    resources:
+      requests:
+        cpu: "${RESO_LMT_AGENT_CPU}"
+        memory: "${RESO_LMT_AGENT_MEM}"
+      limits:
+        cpu: "${RESO_LMT_AGENT_CPU}"
+        memory: "${RESO_LMT_AGENT_MEM}"
+    options:
+      log-level: ${LOG_LEVEL_JAEGER_AGENT}
+      metrics-backend: ${METRICS_BACKEND}
+      processor:
+        jaeger-compact:
+          server-queue-size: ${JAEGER_AGENT_QUEUE_SIZE}
+          workers: ${JAEGER_AGENT_WORKERS}
+  storage:
+    type: elasticsearch
+    esIndexCleaner:
+      enabled: false
+    dependencies:
+      enabled: false
+    options:
+      es:
+        server-urls: http://${STORAGE_HOST}:${STORAGE_PORT}

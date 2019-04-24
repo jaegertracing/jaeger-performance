@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -38,26 +38,35 @@ public class PerformanceTest extends TestSuite {
 
     @Test
     public void test02SpansCount() {
-        Number spansSent = (Number) report.getSpansCountStatistics().get("sent");
-        Number spansFound = (Number) report.getSpansCountStatistics().get("found");
-        logger.debug("Spans[sent:{}, found:{}]", spansSent.longValue(), spansFound.longValue());
-        Assert.assertEquals(spansSent, spansFound);
+        try {
+            Number spansSent = (Number) report.getData().getSpansCountStatistics().get("sent");
+            Number spansFound = (Number) report.getData().getSpansCountStatistics().get("found");
+            logger.debug("Spans[sent:{}, found:{}]", spansSent.longValue(), spansFound.longValue());
+            Assert.assertEquals(spansSent, spansFound);
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
+        }
     }
 
     @Test
     public void test03QueryTime() {
-        for (TimerModel timer : report.getMetric().getTimers()) {
-            if (timer.getName().startsWith("FINAL")) {
-                Double mean = (double) timer.getDuration().get("mean");
-                Double max = (double) timer.getDuration().get("max");
-                Double min = (double) timer.getDuration().get("min");
-                logger.debug("Time taken, name:{}, count:{}, mean:{}, max:{}, min:{}",
-                        timer.getName(), timer.getCount(),
-                        TestUtils.timeTaken(mean.longValue()),
-                        TestUtils.timeTaken(max.longValue()),
-                        TestUtils.timeTaken(min.longValue()));
-                Assert.assertTrue(mean <= MAX_ACCEPTED_DURATION);
+        try {
+            for (TimerModel timer : report.getData().getMetric().getTimers()) {
+                if (timer.getName().startsWith("FINAL")) {
+                    Double mean = (double) timer.getDuration().get("mean");
+                    Double max = (double) timer.getDuration().get("max");
+                    Double min = (double) timer.getDuration().get("min");
+                    logger.debug("Time taken, name:{}, count:{}, mean:{}, max:{}, min:{}",
+                            timer.getName(), timer.getCount(),
+                            TestUtils.timeTaken(mean.longValue()),
+                            TestUtils.timeTaken(max.longValue()),
+                            TestUtils.timeTaken(min.longValue()));
+                    Assert.assertTrue(mean <= MAX_ACCEPTED_DURATION);
+                }
             }
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
         }
+
     }
 }
