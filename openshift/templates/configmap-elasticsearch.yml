@@ -1,5 +1,5 @@
 #
-# Copyright 2018 The Jaeger Authors
+# Copyright 2018-2019 The Jaeger Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -33,6 +33,7 @@ data:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
         flush-interval: ${ES_BULK_FLUSH_INTERVAL}
+    metrics-backend: ${METRICS_BACKEND}
   query: |
     query:
       static-files: ${QUERY_STATIC_FILES}
@@ -43,4 +44,6 @@ data:
         size: ${ES_BULK_SIZE}
         workers: ${ES_BULK_WORKERS}
         flush-interval: ${ES_BULK_FLUSH_INTERVAL}
-
+    metrics-backend: ${METRICS_BACKEND}
+  agent: |
+    metrics-backend: ${METRICS_BACKEND}

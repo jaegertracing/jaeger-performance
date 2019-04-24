@@ -1,0 +1,61 @@
+#
+# Copyright 2018-2019 The Jaeger Authors
+#
+# Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+# in compliance with the License. You may obtain a copy of the License at
+#
+# http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software distributed under the License
+# is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express
+# or implied. See the License for the specific language governing permissions and limitations under
+# the License.
+#
+
+apiVersion: v1
+kind: List
+items:
+- apiVersion: batch/v1
+  kind: Job
+  metadata:
+    name: jaegerspans-reporter-tool-job
+    labels:
+      app: jaegerspans-reporter-tool-job
+      group: jaegerspans-reporter-tool
+  spec:
+    template:
+      metadata:
+        labels:
+          app: jaegerspans-reporter-tool-job
+          group: jaegerspans-reporter-tool
+      spec:
+        containers:
+        - image: ${JAEGER_AGENT_IMAGE}
+          imagePullPolicy: Always
+          args: ["--reporter.type=${REPORTER_TYPE}",
+                 "--reporter.${REPORTER_TYPE}.host-port=${JAEGER_COLLECTOR_HOST}:${JAEGER_COLLECTOR_PORT_POD}",
+                 "--processor.jaeger-compact.server-queue-size=${JAEGER_AGENT_QUEUE_SIZE}",
+                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}"]
+          name: jaeger-agent
+          ports:
+          - containerPort: 6831
+            protocol: UDP
+        - image: ${JAEGERSPANS_REPORTER_TOOL_IMAGE}
+          imagePullPolicy: Always
+          name: jaegerspans-reporter-tool
+          securityContext:
+            privileged: false
+          env:
+          - name: KUBERNETES_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: BROKER_HOST
+            value: "${MQ_BROKER_HOST}"
+          - name: BROKER_PORT
+            value: "${MQ_BROKER_PORT}"
+          - name: BROKER_USER
+            value: "${MQ_BROKER_USER}"
+          - name: BROKER_PASSWORD
+            value: "${MQ_BROKER_PASSWORD}"
+        restartPolicy: Never

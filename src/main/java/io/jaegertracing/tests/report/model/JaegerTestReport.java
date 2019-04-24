@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,10 +13,11 @@
  */
 package io.jaegertracing.tests.report.model;
 
+import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
-import io.jaegertracing.tests.model.TestConfig;
-import io.jaegertracing.tests.model.TestSuiteStatus;
+import lombok.Builder.Default;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -29,8 +30,22 @@ import lombok.ToString;
 @ToString
 @Data
 public class JaegerTestReport {
-    private TestConfig config;
-    private MetricReport metric;
-    private Map<String, Object> spansCountStatistics;
-    private Map<String, TestSuiteStatus> testSuiteStatus;
+    private String id;
+    @Default
+    private String name = "jaegerqe-performance-data";
+    @Default
+    private String type = "jaegerqe-performance-test";
+    @Default
+    private Boolean ready = false;
+    @Default
+    private Map<String, String> labels = new HashMap<>();
+    @Default
+    private TestData data = new TestData();
+
+    public String getId() {
+        if (id == null) {
+            id = UUID.randomUUID().toString();
+        }
+        return id;
+    }
 }

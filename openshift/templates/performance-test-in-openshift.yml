@@ -1,5 +1,5 @@
 #
-# Copyright 2018 The Jaeger Authors
+# Copyright 2018-2019 The Jaeger Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -35,7 +35,8 @@ items:
           args: ["--reporter.type=${REPORTER_TYPE}",
                  "--reporter.${REPORTER_TYPE}.host-port=${JAEGER_COLLECTOR_HOST}:${JAEGER_COLLECTOR_PORT_POD}",
                  "--processor.jaeger-compact.server-queue-size=${JAEGER_AGENT_QUEUE_SIZE}",
-                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}"]
+                 "--processor.jaeger-compact.workers=${JAEGER_AGENT_WORKERS}",
+                 "--metrics-backend=${METRICS_BACKEND}"]
           name: jaeger-agent
           ports:
           - containerPort: 6831
@@ -140,4 +141,22 @@ items:
             value: "${REPORTER_TYPE}"
           - name: JAEGER_COLLECTOR_PORT_POD
             value: "${JAEGER_COLLECTOR_PORT_POD}"
+          - name: JAEGERQE_CONTROLLER_URL
+            value: "${JAEGERQE_CONTROLLER_URL}"
+          - name: USE_INTERNAL_REPORTER
+            value: "${USE_INTERNAL_REPORTER}"
+          - name: REPORT_SPANS_DURATION
+            value: "${REPORT_SPANS_DURATION}"
+          - name: REPORTER_REPLICA_COUNT
+            value: "${REPORTER_REPLICA_COUNT}"
+          - name: METRICS_BACKEND
+            value: "${METRICS_BACKEND}"
+          - name: REPORT_ENGINE_URL
+            value: "${REPORT_ENGINE_URL}"
+          - name: HOST_COUNT_REPORTER
+            value: "${HOST_COUNT_REPORTER}"
+          - name: HOST_COUNT_QUERY
+            value: "${HOST_COUNT_QUERY}"
+          - name: REPORTER_REFERENCE
+            value: "${REPORTER_REFERENCE}"
         restartPolicy: Never

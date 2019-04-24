@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,13 +13,13 @@
  */
 package io.jaegertracing.tests;
 
+import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -39,33 +39,14 @@ import io.jaegertracing.tests.report.ReportFactory;
 import io.jaegertracing.tests.smoke.TestSuiteSmoke;
 import io.jaegertracing.thrift.internal.senders.HttpSender;
 import io.jaegertracing.thrift.internal.senders.UdpSender;
-import io.opentracing.tag.Tags;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
 public class Main {
     static final String SERVICE_NAME = "performance-test";
     static final String TRACER_PREFIX = "tracer_";
-
-    static Map<String, String> getNonseseTags() {
-        Map<String, String> tags = new HashMap<>();
-        tags.put("fooo.bar1", "fobarhax*+??");
-        tags.put("fooo.ba2sar", "true");
-        tags.put("fooo.ba4342r", "1");
-        tags.put("fooo.ba24r*?%", "hehe");
-        tags.put("fooo.bar*?%http.d6cconald", "hehuhoh$?ij");
-        tags.put("fooo.bar*?%http.do**2nald", "goobarRAXbaz");
-        tags.put("fooo.bar*?%http.don(a44ld", "goobarRAXbaz");
-        return tags;
-    }
-
-    static Map<String, String> getTags() {
-        Map<String, String> tags = new HashMap<>();
-        tags.put(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
-        tags.put(Tags.HTTP_METHOD.getKey(), "get");
-        tags.put(Tags.HTTP_METHOD.getKey(), "get");
-        return tags;
-    }
+    // trigger external spans reporter
+    JaegerQEControllerClient qeClient = null;
 
     public static void main(String[] args) throws Exception {
         Main instance = new Main();
@@ -74,7 +55,7 @@ public class Main {
 
     TestConfig config;
 
-    private final int expectedSpansCount;
+    private final int expectedSpansCountByReporter;
 
     public Main() {
         config = TestConfig.get();
@@ -84,6 +65,8 @@ public class Main {
         //config.setSpansCount(100);
         //config.setQueryInterval(30);
         //config.setSpansCountFrom("jaeger-query");
+
+        qeClient = new JaegerQEControllerClient(config.getJaegerqeControllerUrl());
 
         // wait for jaeger agent to get ready
         if (config.getRunningOnOpenshift()) {
@@ -98,31 +81,41 @@ public class Main {
             }
         }
 
-        if (config.isPerformanceTestLongRunEnabled()) {
-            expectedSpansCount = config.getTracersCount() * config.getSpansCount()
-                    * config.getPerformanceTestDuration();
+        if (config.getUseInternalReporter()) {
+            expectedSpansCountByReporter = config.getTracersCount() * config.getSpansCount()
+                    * config.getSpansReportDurationInSecond();
         } else {
-            expectedSpansCount = config.getTracersCount() * config.getSpansCount();
+            expectedSpansCountByReporter = config.getReporterHostCount() * config.getTracersCount()
+                    * config.getSpansCount() * (config.getSpansReportDurationInSecond());
         }
+        ReportFactory.updateSpansCountByReporter(expectedSpansCountByReporter);
+
     }
 
     public void execute() throws Exception {
+        ReportEngineClient reClient = new ReportEngineClient(config.getReportEngineUrl());
+
         if (config.isPerformanceTestEnabled()) {
+            // update report status to report engine
+            reClient.addTestData(ReportFactory.getFinalReport(config));
+
             triggerCreateSpans();
+
+            // report drop status
+            logger.info("[DROP_COUNT={}]", ReportFactory.getDroupCount());
+            logger.info("[DROP_PERCENTAGE={}]", ReportFactory.getDroupPercentage());
+            logger.info("[SPANS_SENT={}]", ReportFactory.getSpansSent());
+            logger.info("[SPANE_FOUND={}]", ReportFactory.getSpansFound());
+            if (ReportFactory.getDroupCount() > 0) {
+                logger.info("[TEST_STATUS=PASSED]", ReportFactory.getSpansFound());
+            } else {
+                logger.error("[TEST_STATUS=FAILED]", ReportFactory.getSpansFound());
+            }
         } else {
-            logger.info("Performance test disabled.");
+            logger.info("Performance test is disabled.");
         }
         executeSmokeTests();
 
-        logger.info("[DROP_COUNT={}]", ReportFactory.getDroupCount());
-        logger.info("[DROP_PERCENTAGE={}]", ReportFactory.getDroupPercentage());
-        logger.info("[SPANS_SENT={}]", ReportFactory.getSpansSent());
-        logger.info("[SPANE_FOUND={}]", ReportFactory.getSpansFound());
-        if (ReportFactory.getDroupCount() > 0) {
-            logger.info("[TEST_STATUS=PASSED]", ReportFactory.getSpansFound());
-        } else {
-            logger.error("[TEST_STATUS=FAILED]", ReportFactory.getSpansFound());
-        }
         logger.info("Final Report as json:\n@@START@@\n{}\n@@END@@", ReportFactory.getFinalReportAsString(config));
         ReportFactory.saveFinalReport(config, "/tmp/performance_report.json");
     }
@@ -136,7 +129,7 @@ public class Main {
             ReportFactory.updateTestSuiteStatus(TestSuiteSmoke.SUITE_NAME, testResult);
             logger.info("Smoke test status:{}", ReportFactory.gettestSuiteStatus(TestSuiteSmoke.SUITE_NAME));
         } else {
-            logger.info("Execute Smoke tests disabled.");
+            logger.info("Execute Smoke tests are disabled.");
         }
     }
 
@@ -187,14 +180,51 @@ public class Main {
 
     private void triggerCreateSpans() throws Exception {
         logger.debug("{}", config);
+
+        // external reporter
+        if (!config.getUseInternalReporter()) {
+            long waitTime = config.getSpansReportDurationInMillisecond();
+            // trigger external spans reporter
+            HashMap<String, Object> data = config.getMap();
+            data.put("serviceName", SERVICE_NAME);
+            data.put("jobId", UUID.randomUUID().toString());
+            data.put("useHostname", false);
+            data.put("reportEngineSuiteId", ReportFactory.getReSuiteId());
+            data.put("reference", ReportFactory.getReporterReference());
+
+            data.put("startTime", System.currentTimeMillis() + (15 * 1000L)); // 15 seconds from now
+            waitTime += 20000L;
+
+            qeClient.startSpansReporter(data);
+            logger.info("Waiting to complte spans report. Wait time:{} ms", waitTime);
+
+            // run query
+            if (config.getQueryInterval() > 0) {
+                long queryEnd = System.currentTimeMillis() + waitTime;
+                int iteration = 1;
+                do {
+                    data.put("jaegerQueryIteration", iteration);
+                    data.put("jaegerQueryOperation", "1");
+                    qeClient.runSpansQuery(data);
+                    Thread.sleep(config.getQueryInterval() * 1000L);
+                    iteration++;
+                    // update spans count by api query
+                    ReportFactory.triggeredJaegerApiQuery();
+
+                } while (queryEnd > System.currentTimeMillis());
+            } else {
+                Thread.sleep(waitTime);
+            }
+
+            // trigger spans count
+            spansCount();
+            return;
+        }
+
+        // internal reporter
+
         Timer reportingTimer = ReportFactory.timer("report-spans");
 
-        if (config.isPerformanceTestEnabled() && config.isPerformanceTestQuickRunEnabled()) {
-            int spansPerSecond = ReportFactory.getSpansPerSecond(config);
-            int timeTakenExpectedInSeconds = (config.getTracersCount() * config.getSpansCount()) / spansPerSecond;
-            logger.info("Performancte 'qucik' run test estimations [spans/second:{}, total duration:{}]",
-                    spansPerSecond, TestUtils.timeTaken(timeTakenExpectedInSeconds * 1000L));
-        }
         long startTime = System.currentTimeMillis();
         // + 1, for query interval execution
         ExecutorService executor = Executors.newFixedThreadPool(config.getTracersCount() + 1);
@@ -208,10 +238,9 @@ public class Main {
             futures.add(executor.submit(worker));
         }
         // add a worker for query execution time, in long run performance mode
-        if (config.isPerformanceTestLongRunEnabled() && config.getQueryInterval() != -1) {
+        if (config.getQueryInterval() != -1) {
             Runnable queryWorker = new JaegerQueryRunnable(config, new ArrayList<>(serviceNames).get(0),
-                    TRACER_PREFIX + 1,
-                    Arrays.asList(getNonseseTags(), getTags()));
+                    TRACER_PREFIX + 1);
             futures.add(executor.submit(queryWorker));
         }
 
@@ -229,14 +258,14 @@ public class Main {
                 config.getTracersCount() * config.getSpansCount(), TimeUnit.MILLISECONDS.toSeconds(duration));
         ISpanCounter spanCounter = getSpanCounter(serviceNames);
         startTime = System.currentTimeMillis();
-        int spansCount = spanCounter.countUntilNoChange(expectedSpansCount);
+        int spansCount = spanCounter.countUntilNoChange((int) ReportFactory.getSpansSent());
         duration = System.currentTimeMillis() - startTime;
-        ReportFactory.updateSpansCount(expectedSpansCount, spansCount);
+        ReportFactory.updateSpansCount(expectedSpansCountByReporter, spansCount);
         logger.info("Exceuted spans count. timetaken:{}, spans[expected:{}, actual:{}]",
-                TimeUnit.MILLISECONDS.toSeconds(duration), expectedSpansCount, spansCount);
+                TimeUnit.MILLISECONDS.toSeconds(duration), (int) ReportFactory.getSpansSent(), spansCount);
 
         JaegerQueryRunnable jaegerQuery = new JaegerQueryRunnable(config,
-                new ArrayList<>(serviceNames).get(0), TRACER_PREFIX + 1, Arrays.asList(getNonseseTags(), getTags()));
+                new ArrayList<>(serviceNames).get(0), TRACER_PREFIX + 1);
         jaegerQuery.execute("FINAL_");
 
         if (config.getStorageType().equalsIgnoreCase("elasticsearch")) {
@@ -247,5 +276,28 @@ public class Main {
         }
         spanCounter.close();
         jaegerQuery.close();
+    }
+
+    private void spansCount() {
+        try {
+            ISpanCounter spanCounter = getSpanCounter(null);
+            long startTime = System.currentTimeMillis();
+            int spansCount = spanCounter.countUntilNoChange((int) ReportFactory.getSpansSent());
+            long duration = System.currentTimeMillis() - startTime;
+            ReportFactory.updateSpansCount(expectedSpansCountByReporter, spansCount);
+            logger.info("Exceuted spans count. timetaken:{}, spans[expected:{}, actual:{}]",
+                    TimeUnit.MILLISECONDS.toSeconds(duration), (int) ReportFactory.getSpansSent(), spansCount);
+
+            if (config.getStorageType().equalsIgnoreCase("elasticsearch")) {
+                ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
+                        config.getStorageHost(), config.getStoragePort());
+                esStatsGetter.printStats();
+
+                esStatsGetter.close();
+                spanCounter.close();
+            }
+        } catch (IOException ex) {
+            logger.error("Exception,", ex);
+        }
     }
 }

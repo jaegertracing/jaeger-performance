@@ -13,22 +13,29 @@
  */
 package io.jaegertracing.tests.report.model;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashMap;
+import java.util.Map;
 
-import lombok.Data;
+import lombok.Builder.Default;
 
-import lombok.NoArgsConstructor;
 import lombok.ToString;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import io.jaegertracing.tests.model.TestConfig;
+import io.jaegertracing.tests.model.TestSuiteStatus;
 
-@ToString
 @Data
+@Builder
 @NoArgsConstructor
-public class MetricReport {
-    private List<TimerModel> timers = new ArrayList<>();
-    private List<MeterModel> meters = new ArrayList<>();
-    private List<HistogramModel> histograms = new ArrayList<>();
-    private List<BaseModel> counters = new ArrayList<>();
-    private List<BaseModel> gauges = new ArrayList<>();
-    private JaegerMetrics jaegerMetrics = new JaegerMetrics();
+@AllArgsConstructor
+@ToString
+public class TestData {
+    private TestConfig config;
+    @Default
+    private Map<String, Object> esData = new HashMap<>();
+    private MetricReport metric;
+    private Map<String, Object> spansCountStatistics;
+    private Map<String, TestSuiteStatus> testSuiteStatus;
 }

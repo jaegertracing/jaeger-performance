@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -24,6 +24,8 @@ import com.codahale.metrics.MetricAttribute;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
 
+import io.jaegertracing.tests.ReportEngineUtils;
+
 import io.jaegertracing.client.Version;
 import io.jaegertracing.tests.JsonUtils;
 import io.jaegertracing.tests.model.TestConfig;
@@ -38,10 +40,19 @@ public class ReportFactory {
 
     private static long spanCountSent = -1;
     private static long spanCountFound = -1;
+    private static long spanCountSentByQuery = 0;
 
     public static JaegerTestReport getFinalReport(TestConfig config) {
         updateReport(config);
         return TEST_REPORT;
+    }
+
+    public static String getReSuiteId() {
+        return TEST_REPORT.getId();
+    }
+
+    public static String getReporterReference() {
+        return System.getenv("REPORTER_REFERENCE");
     }
 
     public static String getFinalReportAsString(TestConfig config) {
@@ -59,12 +70,28 @@ public class ReportFactory {
         return METRICS_REGISTRY.timer(name);
     }
 
+    public static void triggeredJaegerApiQuery() {
+        long spansCount = 0;
+        if (TEST_REPORT.getData().getConfig().getUseInternalReporter()) {
+            // number of samples * number of spans for per trigger * spans per query
+            spansCount = TEST_REPORT.getData().getConfig().getQuerySamples() * 12L * 5L;
+        } else {
+            // number of query host * number of samples * number of spans for per trigger * spans per query
+            spansCount = TEST_REPORT.getData().getConfig().getQueryHostCount()
+                    * TEST_REPORT.getData().getConfig().getQuerySamples() * 12L * 5L;
+        }
+        spanCountSentByQuery += spansCount;
+    }
+
     private static void updateReport(TestConfig config) {
         // add test configurations
-        TEST_REPORT.setConfig(config);
+        TEST_REPORT.getData().setConfig(config);
+
+        // update custom labels
+        TEST_REPORT.getLabels().putAll(ReportEngineUtils.labels(config.getReportEngineLabel()));
 
         // update Jaeger java client version
-        TEST_REPORT.getConfig().setJaegerClientVersion(Version.get());
+        TEST_REPORT.getData().getConfig().setJaegerClientVersion(Version.get());
 
         // disable metric attributes
         Set<MetricAttribute> disabledMetric = new HashSet<>();
@@ -74,7 +101,7 @@ public class ReportFactory {
         disabledMetric.add(MetricAttribute.M15_RATE);
 
         // update metrics
-        TEST_REPORT.setMetric(
+        TEST_REPORT.getData().setMetric(
                 JsonReporter.forRegistry(METRICS_REGISTRY)
                         .convertDurationsTo(TimeUnit.MILLISECONDS)
                         .convertRatesTo(TimeUnit.SECONDS)
@@ -82,35 +109,37 @@ public class ReportFactory {
                         .build().getReport());
 
         // update count statistics
-        TEST_REPORT.setSpansCountStatistics(new HashMap<String, Object>());
-        TEST_REPORT.getSpansCountStatistics().put("sent", spanCountSent);
-        TEST_REPORT.getSpansCountStatistics().put("found", spanCountFound);
+        TEST_REPORT.getData().setSpansCountStatistics(new HashMap<String, Object>());
+        TEST_REPORT.getData().getSpansCountStatistics().put("sent", getSpansSent());
+        TEST_REPORT.getData().getSpansCountStatistics().put("sent_by_reporer", spanCountSent);
+        TEST_REPORT.getData().getSpansCountStatistics().put("sent_by_query", spanCountSentByQuery);
+        TEST_REPORT.getData().getSpansCountStatistics().put("found", spanCountFound);
 
         long dropped_count = getDroupCount();
         double dropped_percentage = getDroupPercentage();
 
-        TEST_REPORT.getSpansCountStatistics().put("dropped_count", dropped_count);
-        TEST_REPORT.getSpansCountStatistics().put("dropped_percentage",
-                dropped_percentage < 0 ? 0 : dropped_percentage);
+        TEST_REPORT.getData().getSpansCountStatistics().put("dropped_count", dropped_count);
+        TEST_REPORT.getData().getSpansCountStatistics().put("dropped_percentage",
+                dropped_percentage < 0 ? 0 : Math.round(dropped_percentage * 100.0) / 100.0);
 
         final int spansPersecond = getSpansPerSecond(config);
-        TEST_REPORT.getSpansCountStatistics().put("per_second", spansPersecond);
-        TEST_REPORT.getSpansCountStatistics().put("per_minute", spansPersecond != -1 ? spansPersecond * 60 : -1);
+        TEST_REPORT.getData().getSpansCountStatistics().put("per_second", spansPersecond);
+        TEST_REPORT.getData().getSpansCountStatistics()
+                .put("per_minute", spansPersecond != -1 ? spansPersecond * 60 : -1);
     }
 
     public static int getSpansPerSecond(TestConfig config) {
         final int spansPersecond;
-        if (config.isPerformanceTestLongRunEnabled()) {
+        if (config.getUseInternalReporter()) {
             spansPersecond = config.getTracersCount() * config.getSpansCount();
         } else {
-            if (config.getPerformanceTestSpanDelay() > 0) {
-                spansPersecond = Double.valueOf(
-                        ((1000.0 / config.getPerformanceTestSpanDelay()) * config.getTracersCount())).intValue();
-            } else {
-                spansPersecond = -1;
-            }
+            spansPersecond = config.getReporterHostCount() * config.getTracersCount() * config.getSpansCount();
         }
         return spansPersecond;
+    }
+
+    public static void updateSpansCountByReporter(long expected) {
+        spanCountSent = expected;
     }
 
     public static void updateSpansCount(long sent, long found) {
@@ -119,15 +148,15 @@ public class ReportFactory {
     }
 
     public static long getDroupCount() {
-        return spanCountSent - spanCountFound;
+        return getSpansSent() - spanCountFound;
     }
 
     public static double getDroupPercentage() {
-        return ((double) getDroupCount() / spanCountSent) * 100.0;
+        return ((double) getDroupCount() / getSpansSent()) * 100.0;
     }
 
     public static long getSpansSent() {
-        return spanCountSent;
+        return spanCountSent + spanCountSentByQuery;
     }
 
     public static long getSpansFound() {
@@ -135,16 +164,16 @@ public class ReportFactory {
     }
 
     public static void updateTestSuiteStatus(String name, Result testResult) {
-        if (TEST_REPORT.getTestSuiteStatus() == null) {
-            TEST_REPORT.setTestSuiteStatus(new HashMap<>());
+        if (TEST_REPORT.getData().getTestSuiteStatus() == null) {
+            TEST_REPORT.getData().setTestSuiteStatus(new HashMap<>());
         }
-        TEST_REPORT.getTestSuiteStatus().put(name, TestSuiteStatus.get(name, testResult));
+        TEST_REPORT.getData().getTestSuiteStatus().put(name, TestSuiteStatus.get(name, testResult));
     }
 
     public static TestSuiteStatus gettestSuiteStatus(String name) {
-        if (TEST_REPORT.getTestSuiteStatus() == null) {
-            TEST_REPORT.setTestSuiteStatus(new HashMap<>());
+        if (TEST_REPORT.getData().getTestSuiteStatus() == null) {
+            TEST_REPORT.getData().setTestSuiteStatus(new HashMap<>());
         }
-        return TEST_REPORT.getTestSuiteStatus().get(name);
+        return TEST_REPORT.getData().getTestSuiteStatus().get(name);
     }
 }

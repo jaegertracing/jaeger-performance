@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -18,9 +18,12 @@ import static io.jaegertracing.tests.TestUtils.getIntegerEnv;
 import static io.jaegertracing.tests.TestUtils.getStringEnv;
 
 import java.io.IOException;
+import java.io.Serializable;
+import java.util.HashMap;
 
 import org.apache.commons.io.FileUtils;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 
@@ -37,13 +40,17 @@ import lombok.extern.slf4j.Slf4j;
 @Data
 @ToString
 @Slf4j
-public class TestConfig {
+public class TestConfig implements Serializable {
+
+    /**
+     * 
+     */
+    private static final long serialVersionUID = 6130562311305075882L;
 
     public static TestConfig loadFromEnvironment() {
         return TestConfig
                 .builder()
                 .testsToRun(getStringEnv("TESTS_TO_RUN", "performance,smoke"))
-                .performanceTestData(getStringEnv("PERFORMANCE_TEST_DATA", "quick,50"))
                 .tracersCount(getIntegerEnv("NUMBER_OF_TRACERS", "50"))
                 .spansCount(getIntegerEnv("NUMBER_OF_SPANS", "10000"))
                 .runningOnOpenshift(getBooleanEnv("RUNNING_ON_OPENSHIFT", "false"))
@@ -83,6 +90,14 @@ public class TestConfig {
                         getStringEnv("PERFORMANCE_TEST_IMAGE", "jkandasa/jaeger-performance-test:latest"))
                 .jaegerAgentQueueSize(getIntegerEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
                 .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
+                .jaegerqeControllerUrl(getStringEnv("JAEGERQE_CONTROLLER_URL", "http://localhost:8080"))
+                .reportEngineUrl(getStringEnv("REPORT_ENGINE_URL", "http://localhost:8080"))
+                .reportEngineLabel(getStringEnv("REPORT_ENGINE_LABEL", "{}"))
+                .useInternalReporter(getBooleanEnv("USE_INTERNAL_REPORTER", "true"))
+                .spansReportDuration(getStringEnv("REPORT_SPANS_DURATION", "10m"))
+                .reporterReplicaCount(getIntegerEnv("REPORTER_REPLICA_COUNT", "5"))
+                .reporterHostCount(getIntegerEnv("HOST_COUNT_REPORTER", "-1"))
+                .queryHostCount(getIntegerEnv("HOST_COUNT_QUERY", "-1"))
                 .build();
     }
 
@@ -106,9 +121,21 @@ public class TestConfig {
         return loadFromEnvironment();
     }
 
+    private String reportEngineUrl;
+    private String reportEngineLabel;
+
+    private Jenkins jenkins;
+
+    private String jaegerqeControllerUrl;
+    private Boolean useInternalReporter;
+    private Integer reporterReplicaCount;
+    private String spansReportDuration;
+
+    private Integer reporterHostCount;
+    private Integer queryHostCount;
+
     // general data
     private String testsToRun;
-    private String performanceTestData;
     private Integer tracersCount;
     private Integer spansCount;
 
@@ -193,42 +220,57 @@ public class TestConfig {
         return false;
     }
 
-    public boolean isPerformanceTestQuickRunEnabled() {
-        if (performanceTestData.toLowerCase().startsWith("quick")) {
-            return true;
+    public Long getSpansReportDurationInMillisecond() {
+        Long number = Long.valueOf(spansReportDuration.replaceAll("[^0-9]", ""));
+        Long timestamp = null;
+        if (spansReportDuration.endsWith("s")) {
+            timestamp = number * 1000L;
+        } else if (spansReportDuration.endsWith("m")) {
+            timestamp = number * 1000L * 60;
+        } else if (spansReportDuration.endsWith("h")) {
+            timestamp = number * 1000L * 60 * 60;
+        } else if (spansReportDuration.endsWith("d")) {
+            timestamp = number * 1000L * 60 * 60 * 24;
+        } else {
+            timestamp = number;
         }
-        return false;
+        return timestamp;
     }
 
-    public boolean isPerformanceTestLongRunEnabled() {
-        return !isPerformanceTestQuickRunEnabled();
+    public int getSpansReportDurationInSecond() {
+        return (int) (getSpansReportDurationInMillisecond() / 1000L);
     }
 
-    private Long getPerformanceTestSpanDelayOrDuration() {
-        String[] data = performanceTestData.split(",");
-        try {
-            if (data.length == 2) {
-                return Long.valueOf(data[1].trim());
-            } else {
-                throw new RuntimeException("Invalid performancte test data: " + performanceTestData);
-            }
-        } catch (Exception ex) {
-            logger.error("Exception,", ex);
-            throw new RuntimeException("Exception:" + ex.getMessage());
+    public Jenkins getJenkins() {
+        if (jenkins == null) {
+            jenkins = new Jenkins();
         }
+        return jenkins;
     }
 
-    public Long getPerformanceTestSpanDelay() {
-        if (isPerformanceTestLongRunEnabled()) {
-            return -1L;
-        }
-        return getPerformanceTestSpanDelayOrDuration();
-    }
-
-    public Integer getPerformanceTestDuration() {
-        if (isPerformanceTestQuickRunEnabled()) {
-            return -1;
-        }
-        return getPerformanceTestSpanDelayOrDuration().intValue();
+    @JsonIgnore
+    public HashMap<String, Object> getMap() {
+        HashMap<String, Object> data = new HashMap<>();
+        data.put("spansCount", spansCount);
+        data.put("tracersCount", tracersCount);
+        data.put("sender", sender);
+        data.put("jaegerCollectorHost", jaegerCollectorHost);
+        data.put("jaegerCollectorPort", jaegerCollectorPort);
+        data.put("jaegerAgentHost", jaegerAgentHost);
+        data.put("jaegerAgentPort", jaegerAgentPort);
+        data.put("jaegerSamplingRate", 1.0);
+        data.put("jaegerFlushInterval", jaegerFlushInterval);
+        data.put("jaegerMaxPocketSize", jaegerMaxPocketSize);
+        data.put("jaegerMaxQueueSize", jaegerMaxQueueSize);
+        data.put("endTime", spansReportDuration);
+        data.put("jaegerQueryHost", jaegerQueryHost);
+        data.put("jaegerQueryPort", jaegerQueryPort);
+        data.put("jaegerQueryLimit", queryLimit);
+        data.put("jaegerQuerySamples", querySamples);
+        data.put("jaegerQueryInterval", queryInterval);
+        data.put("reportEngineUrl", reportEngineUrl);
+        data.put("queryHostCount", queryHostCount);
+        data.put("reporterHostCount", reporterHostCount);
+        return data;
     }
 }

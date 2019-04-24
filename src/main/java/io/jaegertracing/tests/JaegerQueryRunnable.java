@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -16,10 +16,10 @@ package io.jaegertracing.tests;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,6 +27,7 @@ import com.codahale.metrics.Timer;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import io.opentracing.tag.Tags;
 import io.jaegertracing.tests.model.TestConfig;
 import io.jaegertracing.tests.report.ReportFactory;
 import lombok.extern.slf4j.Slf4j;
@@ -37,48 +38,70 @@ import okhttp3.Response;
 @Slf4j
 public class JaegerQueryRunnable implements Closeable, Runnable {
 
-    class QueryTimer extends TimerTask {
+    class QueryTimer implements Runnable {
         @Override
         public void run() {
-            execute(executedCount.get() + "_");
-            executedCount.incrementAndGet();
+            long _start = System.currentTimeMillis();
+            logger.debug("Triggered query job, iteration:{}", iteration);
+            execute(iteration.get() + "_");
+            // update spans count by api query
+            ReportFactory.triggeredJaegerApiQuery();
+            logger.debug("Completed query job in {} ms", System.currentTimeMillis() - _start);
         }
     }
 
     private static final int DEFAULT_LIMIT = 20;
-    private static final AtomicInteger executedCount = new AtomicInteger(1);
+    private static final AtomicInteger iteration = new AtomicInteger(0);
     private OkHttpClient okClient;
     private ObjectMapper objectMapper;
     private TestConfig config;
     private String service;
     private String operation;
     private List<Map<String, String>> tagsList;
+    private String queryUrl = null;
 
-    private final int numberOfExecution;
+    private static final String URL_SERVICE_LIMIT = "%s/api/traces?service=%s&limit=%d&lookback=1h";
+    private static final String URL_SERVICE_LIMIT_TAGS = "%s/api/traces?service=%s&limit=%d&lookback=1h&tags=%s";
+    private static final String URL_SERVICE_LIMIT_OPERATION = "%s/api/traces?service=%s&limit=%d&lookback=1h&operation=%s";
+    private static final String URL_SERVICE_LIMIT_OPERATION_TAGS = "%s/api/traces?service=%s&limit=%d&lookback=1h&operation=%s&tags=%s";
+
+    static Map<String, String> getNonseseTags() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put("fooo.bar1", "fobarhax*+??");
+        tags.put("fooo.ba2sar", "true");
+        tags.put("fooo.ba4342r", "1");
+        tags.put("fooo.ba24r*?%", "hehe");
+        tags.put("fooo.bar*?%http.d6cconald", "hehuhoh$?ij");
+        tags.put("fooo.bar*?%http.do**2nald", "goobarRAXbaz");
+        tags.put("fooo.bar*?%http.don(a44ld", "goobarRAXbaz");
+        return tags;
+    }
+
+    static Map<String, String> getTags() {
+        Map<String, String> tags = new HashMap<>();
+        tags.put(Tags.SPAN_KIND.getKey(), Tags.SPAN_KIND_CLIENT);
+        tags.put(Tags.HTTP_METHOD.getKey(), "get");
+        tags.put(Tags.HTTP_METHOD.getKey(), "get");
+        return tags;
+    }
 
     public JaegerQueryRunnable(
             TestConfig config,
             String service,
-            String operation,
-            List<Map<String, String>> tagsList) {
+            String operation) {
         logger.debug("Service:{}, Operation:{}, {}", service, operation);
         this.config = config;
         this.service = service;
         this.operation = operation;
-        this.tagsList = tagsList;
+        this.tagsList = Arrays.asList(getNonseseTags(), getTags());
         this.objectMapper = new ObjectMapper();
         this.objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+
+        queryUrl = "http://" + config.getJaegerQueryHost() + ":" + config.getJaegerQueryPort();
 
         this.okClient = new OkHttpClient.Builder()
                 .readTimeout(10, TimeUnit.MINUTES)
                 .build();
-
-        if (config.getQueryInterval() != -1) {
-            int finalExecution = config.getPerformanceTestDuration() - config.getQueryInterval() - 5;
-            numberOfExecution = finalExecution / config.getQueryInterval();
-        } else {
-            numberOfExecution = 0;
-        }
     }
 
     @Override
@@ -88,26 +111,20 @@ public class JaegerQueryRunnable implements Closeable, Runnable {
     }
 
     private Map<String, Timer> createTimers(String prefix) {
-        String queryUrl = "http://" + config.getJaegerQueryHost() + ":" + config.getJaegerQueryPort();
-
-        String urlServiceLimit = "%s/api/traces?service=%s&limit=%d&lookback=1h";
-        String urlServiceLimitTags = "%s/api/traces?service=%s&limit=%d&lookback=1h&tags=%s";
-        String urlServiceLimitOperation = "%s/api/traces?service=%s&limit=%d&lookback=1h&operation=%s";
-        String urlServiceLimitOperationTags = "%s/api/traces?service=%s&limit=%d&lookback=1h&operation=%s&tags=%s";
-
         List<String> urls = new ArrayList<>();
-        urls.add(String.format(urlServiceLimit, queryUrl, service, DEFAULT_LIMIT));
-        urls.add(String.format(urlServiceLimit, queryUrl, service, config.getQueryLimit()));
-        urls.add(String.format(urlServiceLimitOperation, queryUrl, service, DEFAULT_LIMIT, operation));
-        urls.add(String.format(urlServiceLimitOperation, queryUrl, service, config.getQueryLimit(), operation));
+        urls.add(String.format(URL_SERVICE_LIMIT, queryUrl, service, DEFAULT_LIMIT));
+        urls.add(String.format(URL_SERVICE_LIMIT, queryUrl, service, config.getQueryLimit()));
+        urls.add(String.format(URL_SERVICE_LIMIT_OPERATION, queryUrl, service, DEFAULT_LIMIT, operation));
+        urls.add(String.format(URL_SERVICE_LIMIT_OPERATION, queryUrl, service, config.getQueryLimit(), operation));
 
         for (Map<String, String> map : tagsList) {
             String tagsQueryString = getTagsQueryString(map);
-            urls.add(String.format(urlServiceLimitTags, queryUrl, service, DEFAULT_LIMIT, tagsQueryString));
-            urls.add(String.format(urlServiceLimitTags, queryUrl, service, config.getQueryLimit(), tagsQueryString));
-            urls.add(String.format(urlServiceLimitOperationTags, queryUrl, service, DEFAULT_LIMIT, operation,
+            urls.add(String.format(URL_SERVICE_LIMIT_TAGS, queryUrl, service, DEFAULT_LIMIT, tagsQueryString));
+            urls.add(String.format(URL_SERVICE_LIMIT_TAGS, queryUrl, service, config.getQueryLimit(), tagsQueryString));
+            urls.add(String.format(URL_SERVICE_LIMIT_OPERATION_TAGS, queryUrl, service, DEFAULT_LIMIT, operation,
                     tagsQueryString));
-            urls.add(String.format(urlServiceLimitOperationTags, queryUrl, service, config.getQueryLimit(), operation,
+            urls.add(String.format(URL_SERVICE_LIMIT_OPERATION_TAGS, queryUrl, service, config.getQueryLimit(),
+                    operation,
                     tagsQueryString));
         }
 
@@ -172,24 +189,30 @@ public class JaegerQueryRunnable implements Closeable, Runnable {
 
     @Override
     public void run() {
-        if (config.isPerformanceTestQuickRunEnabled()) {
-            logger.info("Running query in multiple intervals only applicable for long run test");
-            return;
-        }
-        logger.debug("Query run in multiple intervals triggered. Startes after {} seconds"
-                + " and total iterations:{}, interval:{} sec",
-                config.getQueryInterval(), numberOfExecution, config.getQueryInterval());
-        java.util.Timer timer = new java.util.Timer();
-        timer.schedule(new QueryTimer(), config.getQueryInterval() * 1000L, config.getQueryInterval() * 1000L);
-
         try {
-            while (executedCount.get() < numberOfExecution) {
-                TimeUnit.MILLISECONDS.sleep(500L);
+            if (config.getQueryInterval() <= 0) {
+                return;
             }
-            timer.cancel();
-            logger.debug("Executed count:{}, expected count:{}", executedCount.get(), numberOfExecution);
+            logger.debug("Query run in multiple intervals triggered. Will be triggered in {} seconds",
+                    config.getQueryInterval());
+
+            long waitTime = config.getSpansReportDurationInMillisecond();
+            // remove a interval from wait time
+            waitTime -= config.getQueryInterval() * 1000L;
+            long queryEnd = System.currentTimeMillis() + waitTime;
+            // initial delay
+            Thread.sleep(config.getQueryInterval() * 1000L);
+            while (queryEnd > System.currentTimeMillis()) {
+                iteration.incrementAndGet();
+                // trigger query run
+                new Thread(new QueryTimer()).start();
+                Thread.sleep(config.getQueryInterval() * 1000L);
+            }
+
+            logger.debug("Query run completed, iterations: {}", iteration.get());
         } catch (Exception ex) {
             logger.error("Exception,", ex);
         }
+
     }
 }
