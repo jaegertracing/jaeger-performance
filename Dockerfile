@@ -14,13 +14,12 @@
 
 FROM openjdk:alpine
 
-RUN apk upgrade --update-cache --available && \
-    apk add openssl && \
-    rm -rf /var/cache/apk/*
+RUN  apk add --no-cache openssl curl
 
 ENV APP_HOME /app/
 
-COPY target/performance-tests*-jar-with-dependencies.jar $APP_HOME/performance-tests-jar-with-dependencies.jar
+COPY start.sh ${APP_HOME}/start.sh
+COPY target/performance-tests*-jar-with-dependencies.jar ${APP_HOME}/performance-tests-jar-with-dependencies.jar
 
-WORKDIR $APP_HOME
-CMD java -jar performance-tests-jar-with-dependencies.jar
+WORKDIR ${APP_HOME}
+CMD ${APP_HOME}/start.sh

@@ -270,7 +270,7 @@ public class Main {
 
         // elasticsearch storage stats
         ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
-                config.getStorageHost(), config.getStoragePort());
+                config.getElasticsearchProvider(), config.getStorageHost(), config.getStoragePort());
         esStatsGetter.printStats();
         esStatsGetter.close();
 
@@ -291,7 +291,7 @@ public class Main {
 
             // elasticsearch storage 
             ElasticsearchStatsGetter esStatsGetter = new ElasticsearchStatsGetter(
-                    config.getStorageHost(), config.getStoragePort());
+                    config.getElasticsearchProvider(), config.getStorageHost(), config.getStoragePort());
             esStatsGetter.printStats();
 
             esStatsGetter.close();
