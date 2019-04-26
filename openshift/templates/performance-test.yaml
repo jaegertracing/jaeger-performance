@@ -50,6 +50,10 @@ items:
             protocol: TCP
           securityContext:
             privileged: false
+          volumeMounts:
+          - mountPath: /certs
+            name: certs
+            readOnly: true
           env:
           - name: KUBERNETES_NAMESPACE
             valueFrom:
@@ -210,3 +214,8 @@ items:
           - name: JAEGER_QUERY_PORT
             value: "${JAEGER_QUERY_PORT}"
         restartPolicy: Never
+        volumes:
+        - name: certs
+          secret:
+            defaultMode: 420
+            secretName: ${JAEGER_SERVICE_NAME}-jaeger-elasticsearch
