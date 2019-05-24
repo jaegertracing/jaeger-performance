@@ -19,6 +19,7 @@ import static junit.framework.TestCase.assertTrue;
 
 import java.io.IOException;
 
+import org.junit.Assert;
 import org.junit.Test;
 
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -26,7 +27,6 @@ import com.gargoylesoftware.htmlunit.WebClientOptions;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
 import io.jaegertracing.tests.smoke.TestBase;
-
 import io.jaegertracing.tests.model.TestConfig;
 import lombok.extern.slf4j.Slf4j;
 
@@ -38,7 +38,7 @@ public class SimpleUITest extends TestBase {
      * @throws IOException if it cannot open the page
      */
     @Test
-    public void verifyUIRespondsTest() throws IOException {
+    public void verifyUIRespondsTest() {
         // Turn off HTMLUnit logging as it complains about javascript issues that are not relevant to this test
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF);
 
@@ -57,6 +57,9 @@ public class SimpleUITest extends TestBase {
             assertEquals("Jaeger UI", page.getTitleText());
             assertEquals("Jaeger UI", pageAsText);
             assertTrue(pageAsXml.contains("jaeger-ui-root"));
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
+            Assert.fail("Exception: " + ex.getMessage());
         }
     }
 }
