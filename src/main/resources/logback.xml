@@ -36,6 +36,8 @@
     </triggeringPolicy>
   </appender>
 
+  <logger level="INFO" name="org.hawkular.agent.prometheus.PrometheusScraper" />
+
   <root level="DEBUG">
     <appender-ref ref="CONSOLE" />
     <appender-ref ref="FILE" />

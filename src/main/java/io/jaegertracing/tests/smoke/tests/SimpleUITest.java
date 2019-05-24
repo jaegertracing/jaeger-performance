@@ -25,11 +25,13 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebClientOptions;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+import io.jaegertracing.tests.smoke.TestBase;
+
 import io.jaegertracing.tests.model.TestConfig;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SimpleUITest {
+public class SimpleUITest extends TestBase {
     /**
      * A very simple test to see if the Jaeger UI responds
      *
