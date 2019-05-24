@@ -13,7 +13,10 @@
  */
 package io.jaegertracing.tests.model;
 
+import java.util.List;
+
 import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,6 +34,7 @@ public class TestSuiteStatus {
     private Integer runCount;
     private Integer ignoreCount;
     private Long runTime;
+    private List<Failure> failures;
 
     public static TestSuiteStatus get(String name, Result testResult) {
         testResult.wasSuccessful();
@@ -41,6 +45,7 @@ public class TestSuiteStatus {
                 .failureCount(testResult.getFailureCount())
                 .ignoreCount(testResult.getIgnoreCount())
                 .runTime(testResult.getRunTime())
+                .failures(testResult.getFailures())
                 .build();
     }
 }
