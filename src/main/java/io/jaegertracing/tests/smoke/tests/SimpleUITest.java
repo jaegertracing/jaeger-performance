@@ -14,12 +14,11 @@
 package io.jaegertracing.tests.smoke.tests;
 
 import static org.junit.Assert.assertEquals;
-
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import com.gargoylesoftware.htmlunit.WebClient;
@@ -54,12 +53,15 @@ public class SimpleUITest extends TestBase {
             final String pageAsXml = page.asXml();
             final String pageAsText = page.asText();
 
+            logger.debug("pageAsXml: {}", pageAsXml);
+            logger.debug("pageAsText: {}", pageAsText);
+
             assertEquals("Jaeger UI", page.getTitleText());
             assertEquals("Jaeger UI", pageAsText);
             assertTrue(pageAsXml.contains("jaeger-ui-root"));
         } catch (Exception ex) {
             logger.error("Exception,", ex);
-            Assert.fail("Exception: " + ex.getMessage());
+            fail("Exception: " + ex.getMessage());
         }
     }
 }
