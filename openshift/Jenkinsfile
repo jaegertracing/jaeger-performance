@@ -75,7 +75,7 @@ pipeline {
         choice(name: 'SENDER', choices: 'udp\nhttp', description: 'In which mode spans should be sent. http - collector, udp - agent')
         choice(name: 'REPORTER_TYPE', choices: 'grpc\ntchannel', description: 'Jaeger collector reporter type to use e.g. tchannel, grpc (default "tchannel")')
         choice(name: 'METRICS_BACKEND', choices: 'prometheus\nexpvar\nnone', description: 'Metrics backend for jaeger services, expvar, prometheus, none')
-        choice(name: 'RESOURCE_MONITOR_ENABLED', defaultValue: 'false', description: 'Enable/disable resource monitor. works only with valid metrics backend options')
+        string(name: 'RESOURCE_MONITOR_ENABLED', defaultValue: 'false', description: 'Enable/disable resource monitor. works only with valid metrics backend options')
         
         string(name: 'JAEGER_AGENT_QUEUE_SIZE', defaultValue: '10000', description: 'Jaeger agent, length of the queue for the UDP server')
         string(name: 'JAEGER_AGENT_WORKERS', defaultValue: '10', description: 'Jaeger agent, how many workers the processor should run')
