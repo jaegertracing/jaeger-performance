@@ -49,7 +49,7 @@ public class TestBase {
     private static Tracer tracer = null;
     public static final ThreadLocalRandom RANDOM = ThreadLocalRandom.current();
 
-    TestConfig config = TestConfig.get();
+    protected TestConfig config = TestConfig.get();
 
     public static final String SMOKE_TEST_SERVICE_NAME = "smoke_test";
 

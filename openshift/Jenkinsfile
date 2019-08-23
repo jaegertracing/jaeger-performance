@@ -42,7 +42,7 @@ pipeline {
         string(name: 'REPORT_ENGINE_AGENT_REFERENCE', defaultValue: '', description: 'Report Engine agent reference.')
 
         // image details
-        string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.3', description: 'Jaeger performance test docker image')
+        string(name: 'IMAGE_PERFORMANCE_TEST', defaultValue: 'jkandasa/jaeger-performance-test:3.4', description: 'Jaeger performance test docker image')
         string(name: 'IMAGE_ELASTICSEARCH_OPERATOR', defaultValue: 'quay.io/openshift/origin-elasticsearch-operator:latest', description: 'Elasticsearch operator image')
         string(name: 'IMAGE_ELASTICSEARCH', defaultValue: 'quay.io/openshift/origin-logging-elasticsearch5:latest', description: 'Elasticsearch cluster image')
         string(name: 'IMAGE_JAEGER_OPERATOR', defaultValue: 'jaegertracing/jaeger-operator:master', description: 'Jaeger operator image')
@@ -50,6 +50,7 @@ pipeline {
         string(name: 'IMAGE_JAEGER_AGENT', defaultValue: 'jaegertracing/jaeger-agent:latest', description: 'Jaeger agent Image')
         string(name: 'IMAGE_JAEGER_COLLECTOR', defaultValue: 'jaegertracing/jaeger-collector:latest', description: 'Jaeger collector image')
         string(name: 'IMAGE_JAEGER_QUERY', defaultValue: 'jaegertracing/jaeger-query:latest', description: 'Jaeger query image')
+        string(name: 'IMAGE_JAEGER_ES_INDEX_CLEANER', defaultValue: 'jaegertracing/jaeger-es-index-cleaner:latest', description: 'Jaeger es index cleaner image')
 
         // reporter node details
         booleanParam(name: 'USE_INTERNAL_REPORTER', defaultValue: true, description: 'If you like to use internal spans reporter, check this box')
@@ -73,9 +74,10 @@ pipeline {
         // agent, collector details
         choice(name: 'SENDER', choices: 'udp\nhttp', description: 'In which mode spans should be sent. http - collector, udp - agent')
         choice(name: 'REPORTER_TYPE', choices: 'grpc\ntchannel', description: 'Jaeger collector reporter type to use e.g. tchannel, grpc (default "tchannel")')
-        choice(name: 'METRICS_BACKEND', choices: 'expvar\nprometheus\nnone', description: 'Metrics backend for jaeger services, expvar, prometheus, none')
+        choice(name: 'METRICS_BACKEND', choices: 'prometheus\nexpvar\nnone', description: 'Metrics backend for jaeger services, expvar, prometheus, none')
+        string(name: 'RESOURCE_MONITOR_ENABLED', defaultValue: 'false', description: 'Enable/disable resource monitor. works only with valid metrics backend options')
         
-        string(name: 'JAEGER_AGENT_QUEUE_SIZE', defaultValue: '1000', description: 'Jaeger agent, length of the queue for the UDP server')
+        string(name: 'JAEGER_AGENT_QUEUE_SIZE', defaultValue: '10000', description: 'Jaeger agent, length of the queue for the UDP server')
         string(name: 'JAEGER_AGENT_WORKERS', defaultValue: '10', description: 'Jaeger agent, how many workers the processor should run')
         
         string(name: 'JAEGER_CLIENT_FLUSH_INTERVAL', defaultValue: '200', description: 'Jaeger java client library flush interval')
@@ -83,9 +85,9 @@ pipeline {
         string(name: 'JAEGER_CLIENT_MAX_QUEUE_SIZE', defaultValue: '10000', description: 'Jaeger java client library max queue size')
 
         string(name: 'COLLECTOR_REPLICA_COUNT', defaultValue: '1', description: 'The number of collector pods')
-        string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '2000', description: '--collector.queue-size')
-        string(name: 'COLLECTOR_NUM_WORKERS', defaultValue: '50', description: '--collector.num-workers')
-        string(name: 'COLLECTOR_ES_BULK_SIZE', defaultValue: '5000000', description: '--es.bulk.size')
+        string(name: 'COLLECTOR_QUEUE_SIZE', defaultValue: '20000', description: '--collector.queue-size')
+        string(name: 'COLLECTOR_NUM_WORKERS', defaultValue: '1', description: '--collector.num-workers')
+        string(name: 'COLLECTOR_ES_BULK_SIZE', defaultValue: '524288', description: '--es.bulk.size')
         string(name: 'COLLECTOR_ES_BULK_WORKERS', defaultValue: '1', description: '--es.bulk.workers')
         string(name: 'COLLECTOR_ES_BULK_FLUSH_INTERVAL', defaultValue: '200ms', description: '--es.bulk.flush-interval')
         booleanParam(name: 'COLLECTOR_ES_TAGS_AS_FIELDS', defaultValue: false, description: 'Store all span and process tags as object fields. If true .tags-as-fields.config-file is ignored. Binary tags are always stored as nested objects.')
@@ -103,7 +105,7 @@ pipeline {
         // resource limits
         string(name: 'RESO_LMT_AGENT_CPU', defaultValue: '200m', description: 'Jaeger agent cpu limit')
         string(name: 'RESO_LMT_AGENT_MEM', defaultValue: '128Mi', description: 'Jaeger agent memory limit')
-        string(name: 'RESO_LMT_COLLECTOR_CPU', defaultValue: '500m', description: 'Jaeger collector cpu limit')
+        string(name: 'RESO_LMT_COLLECTOR_CPU', defaultValue: '1', description: 'Jaeger collector cpu limit')
         string(name: 'RESO_LMT_COLLECTOR_MEM', defaultValue: '512Mi', description: 'Jaeger collector memory limit')
         string(name: 'RESO_LMT_QUERY_CPU', defaultValue: '500m', description: 'Jaeger query cpu limit')
         string(name: 'RESO_LMT_QUERY_MEM', defaultValue: '512Mi', description: 'Jaeger query memory limit')
@@ -208,7 +210,8 @@ pipeline {
                     if ${TEST_HA_SETUP};then
                         ./openshift/scripts/wait_for_pods_status_with_ha.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
                     else
-                        ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
+                        # ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
+                        ./openshift/scripts/wait_for_performance_run.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" ${_TEST_DURATION}
                     fi
 
                     # copy log files
@@ -217,8 +220,8 @@ pipeline {
                     ls -lh logs/
 
                     # collect all the logs
-                    ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
-                    export LOGS_COLLECTED="true"
+                    # ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
+                    # export LOGS_COLLECTED="true"
 
                     mvn clean test
                 '''

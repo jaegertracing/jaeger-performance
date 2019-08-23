@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -13,7 +13,10 @@
  */
 package io.jaegertracing.tests.model;
 
+import java.util.List;
+
 import org.junit.runner.Result;
+import org.junit.runner.notification.Failure;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -31,9 +34,9 @@ public class TestSuiteStatus {
     private Integer runCount;
     private Integer ignoreCount;
     private Long runTime;
+    private List<Failure> failures;
 
-    public static TestSuiteStatus get(String name, Result testResult) {
-        testResult.wasSuccessful();
+    public static TestSuiteStatus get(String name, Result testResult) {        
         return TestSuiteStatus.builder()
                 .name(name)
                 .wasSuccessful(testResult.wasSuccessful())
@@ -41,6 +44,7 @@ public class TestSuiteStatus {
                 .failureCount(testResult.getFailureCount())
                 .ignoreCount(testResult.getIgnoreCount())
                 .runTime(testResult.getRunTime())
+                .failures(testResult.getFailures())
                 .build();
     }
 }

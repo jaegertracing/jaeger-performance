@@ -1,5 +1,5 @@
 #
-# Copyright 2018 The Jaeger Authors
+# Copyright 2018-2019 The Jaeger Authors
 #
 # Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
 # in compliance with the License. You may obtain a copy of the License at
@@ -14,9 +14,12 @@
 
 FROM openjdk:alpine
 
+RUN  apk add --no-cache openssl curl
+
 ENV APP_HOME /app/
 
-COPY target/performance-tests*-jar-with-dependencies.jar $APP_HOME/performance-tests-jar-with-dependencies.jar
+COPY start.sh ${APP_HOME}/start.sh
+COPY target/performance-tests*-jar-with-dependencies.jar ${APP_HOME}/performance-tests-jar-with-dependencies.jar
 
-WORKDIR $APP_HOME
-CMD java -jar performance-tests-jar-with-dependencies.jar
+WORKDIR ${APP_HOME}
+CMD ${APP_HOME}/start.sh

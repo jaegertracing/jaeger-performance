@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,8 +14,8 @@
 package io.jaegertracing.tests.smoke.tests;
 
 import static org.junit.Assert.assertEquals;
-
-import static junit.framework.TestCase.assertTrue;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 import java.io.IOException;
 
@@ -25,18 +25,19 @@ import com.gargoylesoftware.htmlunit.WebClient;
 import com.gargoylesoftware.htmlunit.WebClientOptions;
 import com.gargoylesoftware.htmlunit.html.HtmlPage;
 
+import io.jaegertracing.tests.smoke.TestBase;
 import io.jaegertracing.tests.model.TestConfig;
 import lombok.extern.slf4j.Slf4j;
 
 @Slf4j
-public class SimpleUITest {
+public class SimpleUITest extends TestBase {
     /**
      * A very simple test to see if the Jaeger UI responds
      *
      * @throws IOException if it cannot open the page
      */
     @Test
-    public void verifyUIRespondsTest() throws IOException {
+    public void verifyUIRespondsTest() {
         // Turn off HTMLUnit logging as it complains about javascript issues that are not relevant to this test
         java.util.logging.Logger.getLogger("com.gargoylesoftware").setLevel(java.util.logging.Level.OFF);
 
@@ -53,8 +54,11 @@ public class SimpleUITest {
             final String pageAsText = page.asText();
 
             assertEquals("Jaeger UI", page.getTitleText());
-            assertEquals("Jaeger UI", pageAsText);
+            assertTrue(pageAsText.contains("Jaeger UI"));
             assertTrue(pageAsXml.contains("jaeger-ui-root"));
+        } catch (Exception ex) {
+            logger.error("Exception,", ex);
+            fail("Exception: " + ex.getMessage());
         }
     }
 }

@@ -153,23 +153,35 @@ public class ParseReport {
                         try {
                             logger.info("Report found, location: {}", _file.getCanonicalPath());
                             String content = FileUtils.readFileToString(_file, "UTF-8");
-                            int beginIndex = content.indexOf("@@START@@");
-                            int endIndex = content.indexOf("@@END@@");
-                            if (beginIndex != -1 && endIndex != -1) {
-                                beginIndex += 9;
-                                logger.debug("File content:{}", content.substring(beginIndex, endIndex));
+                            // parse json results
+                            int jsonBeginIndex = content.indexOf("@@START@@");
+                            int jsonEndIndex = content.indexOf("@@END@@");
+                            if (jsonBeginIndex != -1 && jsonEndIndex != -1) {
+                                jsonBeginIndex += 9;
+                                logger.debug("JSON File content:{}", content.substring(jsonBeginIndex, jsonEndIndex));
                                 _REPORT = (JaegerTestReport) JsonUtils.loadFromString(
-                                        content.substring(beginIndex, endIndex),
+                                        content.substring(jsonBeginIndex, jsonEndIndex),
                                         JaegerTestReport.class);
                                 // update jaeger service metrics
                                 updateJaegerServiceMetrics(config);
                                 // dump this json
                                 JsonUtils.dumps(_REPORT, _file.getParent(), "jaeger-performance-result.json");
-                                break;
+                            }
+                            // parse xml result
+                            int xmlBeginIndex = content.indexOf("@@XML_START@@");
+                            int xmlEndIndex = content.indexOf("@@XML_END@@");
+                            if (xmlBeginIndex != -1 && xmlEndIndex != -1) {
+                                xmlBeginIndex += 13;
+                                String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex).trim();
+                                logger.debug("XML File content:{}", xmlContent);
+                                // save this file into disk
+                                FileUtils.write(FileUtils.getFile(_file.getParent(), "smoke_test_result.xml"),
+                                        xmlContent, "UTF-8");
                             }
                         } catch (Exception ex) {
                             logger.error("Exception,", ex);
                         }
+                        break;
                     }
                 }
             } else {

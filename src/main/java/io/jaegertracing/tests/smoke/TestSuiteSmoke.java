@@ -1,5 +1,5 @@
 /**
- * Copyright 2018 The Jaeger Authors
+ * Copyright 2018-2019 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -19,6 +19,8 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
 
+import io.jaegertracing.tests.smoke.tests.IndexCleanerTest;
+
 import io.jaegertracing.tests.smoke.tests.BasicSpanTest;
 import io.jaegertracing.tests.smoke.tests.FirstJaegerTest;
 import io.jaegertracing.tests.smoke.tests.SimpleUITest;
@@ -29,7 +31,9 @@ import io.jaegertracing.tests.smoke.tests.TagAndDurationTest;
         BasicSpanTest.class,
         FirstJaegerTest.class,
         SimpleUITest.class,
-        TagAndDurationTest.class })
+        TagAndDurationTest.class,
+        IndexCleanerTest.class
+})
 public class TestSuiteSmoke {
 
     public static final String SUITE_NAME = "smoke_test";

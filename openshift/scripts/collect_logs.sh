@@ -20,6 +20,11 @@
 # update namespace name
 OS_NAMESPACE=$1
 
+# metric port details
+JAGENT=14271
+JCOLLECTOR=14269
+JQUERY=16687
+
 # enable set -x if you want to print commands on console
 #set -x
 
@@ -57,32 +62,32 @@ for _pod in ${PODS_LIST}; do
     oc logs ${_pod} -c "jaeger-query" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-query.log
     oc logs ${_pod} -c "jaeger-agent" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-agent.log
     # metrics - query and agent
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
-      curl http://${_pod_ip}:16686/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-query.${METRICS_EXTENSION}
-      curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
+      curl http://${_pod_ip}:${JQUERY}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-query.${METRICS_EXTENSION}
+      curl http://${_pod_ip}:${JAGENT}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
-        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:16686/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-query.json
-        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:5778/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:${JQUERY}/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-query.json
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:${JAGENT}/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
       fi
     fi
   elif [[ ${_pod} = *"collector"* ]]; then
     oc logs ${_pod} -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}.log
     # metrics - collector
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
-      curl http://${_pod_ip}:14268/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-collector.${METRICS_EXTENSION}
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
+      curl http://${_pod_ip}:${JCOLLECTOR}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-collector.${METRICS_EXTENSION}
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
-        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:14268/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-collector.json
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:${JCOLLECTOR}/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-collector.json
       fi
     fi
   elif [[ ${_pod} = *"spans-reporter"* ]]; then
     # metrics - spans-reporter, jaeger agent
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
-      curl http://${_pod_ip}:5778/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
+      curl http://${_pod_ip}:${JAGENT}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
-        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:5778/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
+        java -jar prometheus-scraper*-cli.jar --json http://${_pod_ip}:${JAGENT}/metrics > logs/${OS_NAMESPACE}_${_pod}_metrics-agent.json
       fi
     fi
   fi
@@ -92,3 +97,6 @@ done
 oc describe pods,services,events,configmaps,deployments -l name!=jenkins -n ${OS_NAMESPACE} >> logs/describe.log
 oc get pods -n ${OS_NAMESPACE} >> logs/pods.log
 
+# collect performance test xml logs
+ls -alh
+cp target/surefire-reports/* logs/ -R | true
