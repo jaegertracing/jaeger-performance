@@ -62,7 +62,7 @@ for _pod in ${PODS_LIST}; do
     oc logs ${_pod} -c "jaeger-query" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-query.log
     oc logs ${_pod} -c "jaeger-agent" -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}_jaeger-agent.log
     # metrics - query and agent
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
       curl http://${_pod_ip}:${JQUERY}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-query.${METRICS_EXTENSION}
       curl http://${_pod_ip}:${JAGENT}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
       # convert prometheus logs to json
@@ -74,7 +74,7 @@ for _pod in ${PODS_LIST}; do
   elif [[ ${_pod} = *"collector"* ]]; then
     oc logs ${_pod} -n ${OS_NAMESPACE} > logs/${OS_NAMESPACE}_${_pod}.log
     # metrics - collector
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
       curl http://${_pod_ip}:${JCOLLECTOR}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-collector.${METRICS_EXTENSION}
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
@@ -83,7 +83,7 @@ for _pod in ${PODS_LIST}; do
     fi
   elif [[ ${_pod} = *"spans-reporter"* ]]; then
     # metrics - spans-reporter, jaeger agent
-    if [[ ${METRICS_BACKEND} != "none" ]]; then
+    if [[ ${METRICS_BACKEND} == "DONOTRUN" ]]; then
       curl http://${_pod_ip}:${JAGENT}/metrics --output logs/${OS_NAMESPACE}_${_pod}_metrics-agent.${METRICS_EXTENSION}
       # convert prometheus logs to json
       if [ ${METRICS_BACKEND} = "prometheus" ]; then
