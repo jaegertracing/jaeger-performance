@@ -146,8 +146,8 @@ public class Runner {
 
     static class MonitorResouces extends TimerTask {
 
-        private static final int AGENT_PORT = 5778;
-        private static final int COLLECTOR_PORT = 14268;
+        private static final int AGENT_PORT = 14271;
+        private static final int COLLECTOR_PORT = 14269;
 
         private static final String[] COUNTER_COLLECTOR = {
                 "jaeger_collector_spans_received_total",

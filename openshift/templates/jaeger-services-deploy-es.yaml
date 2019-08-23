@@ -81,7 +81,9 @@ spec:
   storage:
     type: elasticsearch
     esIndexCleaner:
-      enabled: false
+      enabled: true
+      image: ${IMAGE_JAEGER_ES_INDEX_CLEANER}
+      schedule: "*/3 * * * *"
     dependencies:
       enabled: false
     elasticsearch:

@@ -54,6 +54,7 @@ sed -i 's;${IMAGE_JAEGER_ALL_IN_ONE};'${IMAGE_JAEGER_ALL_IN_ONE}';g' jaeger-serv
 sed -i 's;${IMAGE_JAEGER_AGENT};'${IMAGE_JAEGER_AGENT}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_JAEGER_COLLECTOR};'${IMAGE_JAEGER_COLLECTOR}';g' jaeger-services-final.yaml
 sed -i 's;${IMAGE_JAEGER_QUERY};'${IMAGE_JAEGER_QUERY}';g' jaeger-services-final.yaml
+sed -i 's;${IMAGE_JAEGER_ES_INDEX_CLEANER};'${IMAGE_JAEGER_ES_INDEX_CLEANER}';g' jaeger-services-final.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_AGENT};'${LOG_LEVEL_JAEGER_AGENT}';g' jaeger-services-final.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_COLLECTOR};'${LOG_LEVEL_JAEGER_COLLECTOR}';g' jaeger-services-final.yaml
 sed -i 's;${LOG_LEVEL_JAEGER_QUERY};'${LOG_LEVEL_JAEGER_QUERY}';g' jaeger-services-final.yaml

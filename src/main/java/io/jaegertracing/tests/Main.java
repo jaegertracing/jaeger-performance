@@ -13,6 +13,9 @@
  */
 package io.jaegertracing.tests;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -25,13 +28,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.commons.io.FileUtils;
+import org.apache.tools.ant.taskdefs.optional.junit.JUnitResultFormatter;
+import org.apache.tools.ant.taskdefs.optional.junit.XMLJUnitResultFormatter;
 import org.junit.runner.JUnitCore;
 import org.junit.runner.Result;
 
 import com.codahale.metrics.Timer;
 
+import io.jaegertracing.tests.junitxml.JUnitResultFormatterAsRunListener;
 import io.jaegertracing.tests.clients.ClientUtils;
-
 import io.jaegertracing.tests.resourcemonitor.Runner;
 import io.jaegertracing.internal.JaegerTracer;
 import io.jaegertracing.internal.reporters.RemoteReporter;
@@ -128,9 +134,26 @@ public class Main {
         if (config.isSmokeTestEnabled()) {
             logger.info("Execute Smoke tests enabled. Triggering smoke tests");
             JUnitCore jUnitCore = new JUnitCore();
+            // add support for XML report generation
+            final String xmlResultFile = "/tmp/smoke-test-result.xml";
+            final JUnitResultFormatter formatter = new XMLJUnitResultFormatter();
+            try {
+                formatter.setOutput(new FileOutputStream(new File(xmlResultFile)));
+            } catch (FileNotFoundException ex1) {
+                logger.error("Exception,", ex1);
+            }
+            jUnitCore.addListener(new JUnitResultFormatterAsRunListener(formatter));
             Result testResult = jUnitCore.run(TestSuiteSmoke.class);
             ReportFactory.updateTestSuiteStatus(TestSuiteSmoke.SUITE_NAME, testResult);
             logger.info("Smoke test status:{}", ReportFactory.gettestSuiteStatus(TestSuiteSmoke.SUITE_NAME));
+            // print xml file on console
+            try {
+                String xmlStringData = FileUtils.readFileToString(new File(xmlResultFile), "UTF-8");
+                logger.info("Smoke test report as XML:\n@@XML_START@@\n{}\n@@XML_END@@", xmlStringData.replaceAll(
+                        "classname=\"io.jaegertracing.tests.junitxml.DescriptionAsTest\"", "")); // remove irrelevant class name
+            } catch (IOException ex) {
+                logger.error("Exception,", ex);
+            }
         } else {
             logger.info("Execute Smoke tests are disabled.");
         }

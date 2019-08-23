@@ -119,6 +119,8 @@ items:
             value: "${IMAGE_JAEGER_COLLECTOR}"
           - name: IMAGE_JAEGER_QUERY
             value: "${IMAGE_JAEGER_QUERY}"
+          - name: IMAGE_JAEGER_ES_INDEX_CLEANER
+            value: "${IMAGE_JAEGER_ES_INDEX_CLEANER}"
           - name: USE_INTERNAL_REPORTER
             value: "${USE_INTERNAL_REPORTER}"
           - name: NODE_COUNT_SPANS_REPORTER
@@ -149,6 +151,8 @@ items:
             value: "${REPORTER_TYPE}"
           - name: METRICS_BACKEND
             value: "${METRICS_BACKEND}"
+          - name: RESOURCE_MONITOR_ENABLED
+            value: "${RESOURCE_MONITOR_ENABLED}"
           - name: JAEGER_AGENT_QUEUE_SIZE
             value: "${JAEGER_AGENT_QUEUE_SIZE}"
           - name: JAEGER_AGENT_WORKERS

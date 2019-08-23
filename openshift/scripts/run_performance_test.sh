@@ -67,6 +67,7 @@ sed -i 's;${IMAGE_JAEGER_ALL_IN_ONE};'${IMAGE_JAEGER_ALL_IN_ONE}';g' performance
 sed -i 's;${IMAGE_JAEGER_AGENT};'${IMAGE_JAEGER_AGENT}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_COLLECTOR};'${IMAGE_JAEGER_COLLECTOR}';g' performance-test.yaml
 sed -i 's;${IMAGE_JAEGER_QUERY};'${IMAGE_JAEGER_QUERY}';g' performance-test.yaml
+sed -i 's;${IMAGE_JAEGER_ES_INDEX_CLEANER};'${IMAGE_JAEGER_ES_INDEX_CLEANER}';g' performance-test.yaml
 sed -i 's;${USE_INTERNAL_REPORTER};'${USE_INTERNAL_REPORTER}';g' performance-test.yaml
 sed -i 's;${NODE_COUNT_SPANS_REPORTER};'${NODE_COUNT_SPANS_REPORTER}';g' performance-test.yaml
 sed -i 's;${NODE_COUNT_QUERY_RUNNER};'${NODE_COUNT_QUERY_RUNNER}';g' performance-test.yaml
@@ -83,6 +84,7 @@ sed -i 's;${QUERY_INTERVAL};'${QUERY_INTERVAL}';g' performance-test.yaml
 sed -i 's;${SENDER};'${SENDER}';g' performance-test.yaml
 sed -i 's;${REPORTER_TYPE};'${REPORTER_TYPE}';g' performance-test.yaml
 sed -i 's;${METRICS_BACKEND};'${METRICS_BACKEND}';g' performance-test.yaml
+sed -i 's;${RESOURCE_MONITOR_ENABLED};'${RESOURCE_MONITOR_ENABLED}';g' performance-test.yaml
 sed -i 's;${JAEGER_AGENT_QUEUE_SIZE};'${JAEGER_AGENT_QUEUE_SIZE}';g' performance-test.yaml
 sed -i 's;${JAEGER_AGENT_WORKERS};'${JAEGER_AGENT_WORKERS}';g' performance-test.yaml
 sed -i 's;${JAEGER_CLIENT_FLUSH_INTERVAL};'${JAEGER_CLIENT_FLUSH_INTERVAL}';g' performance-test.yaml

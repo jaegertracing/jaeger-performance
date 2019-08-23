@@ -36,8 +36,7 @@ public class TestSuiteStatus {
     private Long runTime;
     private List<Failure> failures;
 
-    public static TestSuiteStatus get(String name, Result testResult) {
-        testResult.wasSuccessful();
+    public static TestSuiteStatus get(String name, Result testResult) {        
         return TestSuiteStatus.builder()
                 .name(name)
                 .wasSuccessful(testResult.wasSuccessful())

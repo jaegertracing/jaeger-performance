@@ -25,8 +25,6 @@ import org.elasticsearch.client.RestClient;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.jaegertracing.tests.osutils.OSResponse;
-
 import io.jaegertracing.tests.osutils.OSCommandExecuter;
 import io.jaegertracing.tests.model.TestConfig;
 import lombok.extern.slf4j.Slf4j;
@@ -110,12 +108,7 @@ public class ElasticsearchSpanCounter extends UntilNoChangeCounter {
 
     private String execute(String request) throws IOException {
         if (esProvider.equals("es-operator")) {
-            String command = String.format(
-                    "curl --cacert /certs/ca --key /certs/key --cert /certs/cert https://%s:%d%s",
-                    esHost, esPort, request);
-            OSResponse response = cmdExecuter.executeLinuxCommand(command);
-            logger.debug("Command:{}, {}", command, response);
-            return response.getResult();
+            return cmdExecuter.executeElasticsearchCmd(esHost, esPort, request).getResult();
         } else {
             Response response = restClient.performRequest("GET", request);
             return EntityUtils.toString(response.getEntity());

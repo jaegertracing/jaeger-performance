@@ -83,6 +83,8 @@ public class TestConfig implements Serializable {
                 .imageJaegerAgent(getStringEnv("IMAGE_JAEGER_AGENT", "jaegertracing/jaeger-agent:latest"))
                 .imageJaegerCollector(getStringEnv("IMAGE_JAEGER_COLLECTOR", "jaegertracing/jaeger-collector:latest"))
                 .imageJaegerQuery(getStringEnv("IMAGE_JAEGER_QUERY", "jaegertracing/jaeger-query:latest"))
+                .imageJaegerEsIndexCleaner(
+                        getStringEnv("IMAGE_JAEGER_ES_INDEX_CLEANER", "jaegertracing/jaeger-es-index-cleaner:latest"))
                 .useInternalReporter(getBooleanEnv("USE_INTERNAL_REPORTER", "true"))
                 .nodeCountSpansReporter(getIntegerEnv("NODE_COUNT_SPANS_REPORTER", "1"))
                 .nodeCountQueryRunner(getIntegerEnv("NODE_COUNT_QUERY_RUNNER", "1"))
@@ -99,6 +101,7 @@ public class TestConfig implements Serializable {
                 .sender(getStringEnv("SENDER", "udp"))
                 .reporterType(getStringEnv("REPORTER_TYPE", "gprc"))
                 .metricsBackend(getStringEnv("METRICS_BACKEND", "expvar"))
+                .enableResourceMonitor(getBooleanEnv("RESOURCE_MONITOR_ENABLED", "false"))
                 .jaegerAgentQueueSize(getLongEnv("JAEGER_AGENT_QUEUE_SIZE", "1000"))
                 .jaegerAgentWorkers(getIntegerEnv("JAEGER_AGENT_WORKERS", "10"))
                 .jaegerClientFlushInterval(getIntegerEnv("JAEGER_CLIENT_FLUSH_INTERVAL", "200"))
@@ -193,6 +196,7 @@ public class TestConfig implements Serializable {
     private String imageJaegerAgent;
     private String imageJaegerCollector;
     private String imageJaegerQuery;
+    private String imageJaegerEsIndexCleaner;
 
     private Boolean useInternalReporter;
     private Integer nodeCountSpansReporter;
@@ -214,6 +218,7 @@ public class TestConfig implements Serializable {
     private String sender;
     private String reporterType;
     private String metricsBackend;
+    private Boolean enableResourceMonitor;
 
     private Long jaegerAgentQueueSize;
     private Integer jaegerAgentWorkers;

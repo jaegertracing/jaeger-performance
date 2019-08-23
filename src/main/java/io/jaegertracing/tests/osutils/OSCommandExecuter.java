@@ -13,11 +13,15 @@
  */
 package io.jaegertracing.tests.osutils;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class OSCommandExecuter {
 
     private OSResponse executeCommand(String... command) {
@@ -41,5 +45,14 @@ public class OSCommandExecuter {
 
     public OSResponse executeLinuxCommand(String command) {
         return executeCommand("/bin/sh", "-c", command);
+    }
+
+    public OSResponse executeElasticsearchCmd(String esHost, Integer esPort, String request) throws IOException {
+        String command = String.format(
+                "curl --cacert /certs/ca --key /certs/key --cert /certs/cert https://%s:%d%s",
+                esHost, esPort, request);
+        OSResponse response = this.executeLinuxCommand(command);
+        logger.debug("Command:{}, {}", command, response);
+        return response;
     }
 }
