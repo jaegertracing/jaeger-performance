@@ -98,4 +98,6 @@ oc describe pods,services,events,configmaps,deployments -l name!=jenkins -n ${OS
 oc get pods -n ${OS_NAMESPACE} >> logs/pods.log
 
 # collect performance test xml logs
-cp target/surefire-reports/* logs/ -R
+ls -alh
+ls -alh target/
+# cp target/surefire-reports/* logs/ -R
