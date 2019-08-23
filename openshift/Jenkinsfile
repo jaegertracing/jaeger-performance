@@ -210,7 +210,8 @@ pipeline {
                     if ${TEST_HA_SETUP};then
                         ./openshift/scripts/wait_for_pods_status_with_ha.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
                     else
-                        ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
+                        # ./openshift/scripts/wait_for_pods_status.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" "Running" ${_TEST_DURATION}
+                        ./openshift/scripts/wait_for_performance_run.sh ${OS_NAMESPACE} "app=jaeger-performance-test-job" ${_TEST_DURATION}
                     fi
 
                     # copy log files
