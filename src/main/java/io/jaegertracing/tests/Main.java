@@ -153,8 +153,9 @@ public class Main {
             // print xml file on console
             try {
                 String xmlStringData = FileUtils.readFileToString(new File(xmlResultFile), "UTF-8");
+                // remove irrelevant class name and add "jaeger" as classname for smoke tests
                 logger.info("Smoke test report as XML:\n@@XML_START@@\n{}\n@@XML_END@@", xmlStringData.replaceAll(
-                        "classname=\"io.jaegertracing.tests.junitxml.DescriptionAsTest\"", "")); // remove irrelevant class name
+                        "io.jaegertracing.tests.junitxml.DescriptionAsTest", "jaeger"));
             } catch (IOException ex) {
                 logger.error("Exception,", ex);
             }
