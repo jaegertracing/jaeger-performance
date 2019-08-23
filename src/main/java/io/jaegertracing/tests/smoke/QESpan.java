@@ -20,6 +20,8 @@ import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
 
+import io.opentracing.tag.Tag;
+
 import io.opentracing.Span;
 import io.opentracing.SpanContext;
 
@@ -245,5 +247,11 @@ public class QESpan implements Span {
                 ", span=" + span +
                 ", json=" + json +
                 '}';
+    }
+
+    @Override
+    public <T> Span setTag(Tag<T> arg0, T arg1) {
+        // TODO Auto-generated method stub
+        return null;
     }
 }
