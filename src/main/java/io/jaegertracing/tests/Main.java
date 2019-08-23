@@ -103,7 +103,9 @@ public class Main {
                 ClientUtils.reClient().addTestData(ReportFactory.getFinalReport(config));
             }
             // start metrics collector
-            Runner.start();
+            if (config.getEnableResourceMonitor()) {
+                Runner.start();
+            }
 
             triggerCreateSpans();
 
@@ -123,7 +125,9 @@ public class Main {
         executeSmokeTests();
 
         // stop metrics collector
-        Runner.stop();
+        if (config.getEnableResourceMonitor()) {
+            Runner.stop();
+        }
 
         logger.info("Final Report as json:\n@@START@@\n{}\n@@END@@", ReportFactory.getFinalReportAsString(config));
         ReportFactory.saveFinalReport(config, "/tmp/performance_report.json");

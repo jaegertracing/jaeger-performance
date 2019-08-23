@@ -172,7 +172,7 @@ public class ParseReport {
                             int xmlEndIndex = content.indexOf("@@XML_END@@");
                             if (xmlBeginIndex != -1 && xmlEndIndex != -1) {
                                 xmlBeginIndex += 13;
-                                String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex);
+                                String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex).trim();
                                 logger.debug("XML File content:{}", xmlContent);
                                 // save this file into disk
                                 FileUtils.write(FileUtils.getFile(_file.getParent(), "smoke_test_result.xml"),
