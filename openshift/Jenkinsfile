@@ -220,8 +220,8 @@ pipeline {
                     ls -lh logs/
 
                     # collect all the logs
-                    ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
-                    export LOGS_COLLECTED="true"
+                    # ./openshift/scripts/collect_logs.sh ${OS_NAMESPACE}
+                    # export LOGS_COLLECTED="true"
 
                     mvn clean test
                 '''

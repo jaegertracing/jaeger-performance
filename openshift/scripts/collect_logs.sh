@@ -99,5 +99,4 @@ oc get pods -n ${OS_NAMESPACE} >> logs/pods.log
 
 # collect performance test xml logs
 ls -alh
-ls -alh target/
-# cp target/surefire-reports/* logs/ -R
+cp target/surefire-reports/* logs/ -R | true
