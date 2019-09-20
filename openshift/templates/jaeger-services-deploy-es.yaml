@@ -81,7 +81,7 @@ spec:
   storage:
     type: elasticsearch
     esIndexCleaner:
-      enabled: true
+      enabled: false
       image: ${IMAGE_JAEGER_ES_INDEX_CLEANER}
       schedule: "*/3 * * * *"
     dependencies:
@@ -90,3 +90,7 @@ spec:
       image: ${IMAGE_ELASTICSEARCH}
       nodeCount: 3
       resources:
+        limits:
+          memory: 1Gi
+        requests:
+          memory: 1Gi
