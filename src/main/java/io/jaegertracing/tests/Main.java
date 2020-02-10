@@ -143,7 +143,6 @@ public class Main {
 
             // execute via collector (http)
             smokeTests("COLLECTOR");
-
         } else {
             logger.info("Execute Smoke tests are disabled.");
         }
