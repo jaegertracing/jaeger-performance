@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 The Jaeger Authors
+ * Copyright 2018-2020 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -32,9 +32,14 @@ public class SmokeTest extends TestSuite {
 
     @Test
     public void testSmokeTestReport() {
+        assertSuite(TestSuiteSmoke.SUITE_NAME + "_agent");
+        assertSuite(TestSuiteSmoke.SUITE_NAME + "_collector");
+    }
+
+    private void assertSuite(String suiteName) {
         try {
             TestSuiteStatus _status = ParseReport.report().getData().getTestSuiteStatus()
-                    .get(TestSuiteSmoke.SUITE_NAME);
+                    .get(suiteName);
             logger.info("Smoke test status:{}", _status);
             Assert.assertNotNull(_status);
             Assert.assertTrue(_status.getWasSuccessful());

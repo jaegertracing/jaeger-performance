@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 The Jaeger Authors
+ * Copyright 2018-2020 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -14,6 +14,7 @@
 package io.jaegertracing.tests;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 
 import io.jaegertracing.tests.clients.ClientUtils;
-
 import io.jaegertracing.tests.report.model.JaegerMetrics;
 import io.jaegertracing.tests.model.TestConfig;
 import io.jaegertracing.tests.report.ReportFactory;
@@ -168,16 +168,8 @@ public class ParseReport {
                                 JsonUtils.dumps(_REPORT, _file.getParent(), "jaeger-performance-result.json");
                             }
                             // parse xml result
-                            int xmlBeginIndex = content.indexOf("@@XML_START@@");
-                            int xmlEndIndex = content.indexOf("@@XML_END@@");
-                            if (xmlBeginIndex != -1 && xmlEndIndex != -1) {
-                                xmlBeginIndex += 13;
-                                String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex).trim();
-                                logger.debug("XML File content:{}", xmlContent);
-                                // save this file into disk
-                                FileUtils.write(FileUtils.getFile(_file.getParent(), "smoke_test_result.xml"),
-                                        xmlContent, "UTF-8");
-                            }
+                            collectSmokeTestData(_file, content, "AGENT");
+                            collectSmokeTestData(_file, content, "COLLECTOR");
                         } catch (Exception ex) {
                             logger.error("Exception,", ex);
                         }
@@ -189,5 +181,28 @@ public class ParseReport {
             }
         }
         return _REPORT;
+    }
+
+    private static void collectSmokeTestData(File file, String content, String endpoint) {
+        String startRef = "@@XML_START_" + endpoint.toUpperCase() + "@@";
+        String endRef = "@@XML_END_" + endpoint.toUpperCase() + "@@";
+
+        int xmlBeginIndex = content.indexOf(startRef);
+        int xmlEndIndex = content.indexOf(endRef);
+        if (xmlBeginIndex != -1 && xmlEndIndex != -1) {
+            xmlBeginIndex += startRef.length();
+            String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex).trim();
+            logger.debug("XML File content:{}", xmlContent);
+            // save this file into disk
+            try {
+                FileUtils.write(
+                        FileUtils.getFile(file.getParent(), "smoke_test_result_" + endpoint.toLowerCase() + ".xml"),
+                        xmlContent, "UTF-8");
+            } catch (IOException ex) {
+                logger.error("Exception,", ex);
+            }
+        } else {
+            logger.info("Smoke test content not found, endpoint: {}", endpoint);
+        }
     }
 }
