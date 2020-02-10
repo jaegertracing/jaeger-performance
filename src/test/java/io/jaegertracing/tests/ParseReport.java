@@ -184,10 +184,13 @@ public class ParseReport {
     }
 
     private static void collectSmokeTestData(File file, String content, String endpoint) {
-        int xmlBeginIndex = content.indexOf("@@XML_START_" + endpoint.toUpperCase() + "@@");
-        int xmlEndIndex = content.indexOf("@@XML_END_" + endpoint.toUpperCase() + "@@");
+        String startRef = "@@XML_START_" + endpoint.toUpperCase() + "@@";
+        String endRef = "@@XML_END_" + endpoint.toUpperCase() + "@@";
+
+        int xmlBeginIndex = content.indexOf(startRef);
+        int xmlEndIndex = content.indexOf(endRef);
         if (xmlBeginIndex != -1 && xmlEndIndex != -1) {
-            xmlBeginIndex += 13;
+            xmlBeginIndex += startRef.length();
             String xmlContent = content.substring(xmlBeginIndex, xmlEndIndex).trim();
             logger.debug("XML File content:{}", xmlContent);
             // save this file into disk
