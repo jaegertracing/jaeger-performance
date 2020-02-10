@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 The Jaeger Authors
+ * Copyright 2018-2020 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -47,6 +47,7 @@ public class TestBase {
     public SimpleRestClient simpleRestClient = new SimpleRestClient();
     protected Instant testStartTime = null;
     private static Tracer tracer = null;
+    private static String endpoint = null;
     public static final ThreadLocalRandom RANDOM = ThreadLocalRandom.current();
 
     protected TestConfig config = TestConfig.get();
@@ -96,10 +97,15 @@ public class TestBase {
     }
 
     public Tracer tracer() {
-        if (tracer == null) {
+        String _endpoint = System.getProperty("ENDPOINT");
+        if (_endpoint == null) {
+            _endpoint = config.getSender().equalsIgnoreCase("http") ? "collector" : "agent";
+        }
+        if (tracer == null || endpoint == null || !endpoint.equalsIgnoreCase(_endpoint)) {
             SenderConfiguration conf = null;
+            endpoint = _endpoint;
 
-            if (config.getSender().equalsIgnoreCase("http")) {
+            if (endpoint.equalsIgnoreCase("collector")) {
                 String httpEndpoint = "http://" + config.getJaegerCollectorHost() + ":"
                         + config.getJaegerCollectorPort() + "/api/traces";
                 logger.info("Using collector endpoint [" + httpEndpoint + "]");

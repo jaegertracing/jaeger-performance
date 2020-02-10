@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 The Jaeger Authors
+ * Copyright 2018-2020 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -137,30 +137,44 @@ public class Main {
         // execute smoke tests, if enabled
         if (config.isSmokeTestEnabled()) {
             logger.info("Execute Smoke tests enabled. Triggering smoke tests");
-            JUnitCore jUnitCore = new JUnitCore();
-            // add support for XML report generation
-            final String xmlResultFile = "/tmp/smoke-test-result.xml";
-            final JUnitResultFormatter formatter = new XMLJUnitResultFormatter();
-            try {
-                formatter.setOutput(new FileOutputStream(new File(xmlResultFile)));
-            } catch (FileNotFoundException ex1) {
-                logger.error("Exception,", ex1);
-            }
-            jUnitCore.addListener(new JUnitResultFormatterAsRunListener(formatter));
-            Result testResult = jUnitCore.run(TestSuiteSmoke.class);
-            ReportFactory.updateTestSuiteStatus(TestSuiteSmoke.SUITE_NAME, testResult);
-            logger.info("Smoke test status:{}", ReportFactory.gettestSuiteStatus(TestSuiteSmoke.SUITE_NAME));
-            // print xml file on console
-            try {
-                String xmlStringData = FileUtils.readFileToString(new File(xmlResultFile), "UTF-8");
-                // remove irrelevant class name and add "jaeger" as classname for smoke tests
-                logger.info("Smoke test report as XML:\n@@XML_START@@\n{}\n@@XML_END@@", xmlStringData.replaceAll(
-                        "io.jaegertracing.tests.junitxml.DescriptionAsTest", "jaeger"));
-            } catch (IOException ex) {
-                logger.error("Exception,", ex);
-            }
+
+            // execute via agent (udp)
+            smokeTests("AGENT");
+
+            // execute via collector (http)
+            smokeTests("COLLECTOR");
+
         } else {
             logger.info("Execute Smoke tests are disabled.");
+        }
+    }
+
+    private void smokeTests(String endpoint) {
+        endpoint = endpoint.toUpperCase();
+        System.setProperty("ENDPOINT", endpoint);
+
+        JUnitCore jUnitCore = new JUnitCore();
+        // add support for XML report generation
+        final String xmlResultFile = "/tmp/smoke-test-result_" + endpoint + ".xml";
+        final JUnitResultFormatter formatter = new XMLJUnitResultFormatter();
+        try {
+            formatter.setOutput(new FileOutputStream(new File(xmlResultFile)));
+        } catch (FileNotFoundException ex1) {
+            logger.error("Exception,", ex1);
+        }
+        jUnitCore.addListener(new JUnitResultFormatterAsRunListener(formatter));
+        Result testResult = jUnitCore.run(TestSuiteSmoke.class);
+        ReportFactory.updateTestSuiteStatus(TestSuiteSmoke.SUITE_NAME + "_" + endpoint.toLowerCase(), testResult);
+        logger.info("Smoke test status:{}", ReportFactory.gettestSuiteStatus(TestSuiteSmoke.SUITE_NAME));
+        // print xml file on console
+        try {
+            String xmlStringData = FileUtils.readFileToString(new File(xmlResultFile), "UTF-8");
+            // remove irrelevant class name and add "jaeger" as classname for smoke tests
+            logger.info("Smoke test report as XML:\n@@XML_START_{}@@\n{}\n@@XML_END_{}@@",
+                    endpoint, xmlStringData.replaceAll("io.jaegertracing.tests.junitxml.DescriptionAsTest", "jaeger"),
+                    endpoint);
+        } catch (IOException ex) {
+            logger.error("Exception,", ex);
         }
     }
 

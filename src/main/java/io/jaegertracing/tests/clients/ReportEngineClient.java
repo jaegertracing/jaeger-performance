@@ -1,5 +1,5 @@
 /**
- * Copyright 2018-2019 The Jaeger Authors
+ * Copyright 2018-2020 The Jaeger Authors
  *
  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
  * in compliance with the License. You may obtain a copy of the License at
@@ -60,7 +60,7 @@ public class ReportEngineClient extends GenericRestClient {
         RequestBody requestBody = new MultipartBody.Builder()
                 .setType(FORM_DATA)
                 .addFormDataPart("file", file.getName(),
-                        RequestBody.create(MediaType.get("application/octet-stream"), file))
+                        RequestBody.create(MediaType.parse("application/octet-stream"), file))
                 .build();
 
         Request request = new Request.Builder()
