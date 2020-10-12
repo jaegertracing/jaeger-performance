@@ -42,7 +42,7 @@
     <version.projectlombok>1.18.6</version.projectlombok>
     <version.slf4j>1.7.25</version.slf4j>
     <version.junit>4.13.1</version.junit>
-    <version.htmlunit>2.31</version.htmlunit>
+    <version.htmlunit>2.37.0</version.htmlunit>
     <version.ant-junit>1.10.6</version.ant-junit>
 
     <version.maven-assembly-plugin>3.1.0</version.maven-assembly-plugin>
