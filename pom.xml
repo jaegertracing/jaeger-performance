@@ -34,7 +34,7 @@
     <version.awaitility>3.1.2</version.awaitility>
     <version.cassandra-driver>3.3.0</version.cassandra-driver>
     <version.dropwizard>3.2.2</version.dropwizard>
-    <version.elasticsearch>6.1.1</version.elasticsearch>
+    <version.elasticsearch>6.8.15</version.elasticsearch>
     <version.jackson>2.12.1</version.jackson>
     <version.jaeger>1.1.0</version.jaeger>
     <version.lang3>3.8</version.lang3>
