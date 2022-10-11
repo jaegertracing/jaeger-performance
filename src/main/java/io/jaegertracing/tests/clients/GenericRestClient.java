@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import lombok.Getter;
 
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.MediaType;
 import okhttp3.OkHttpClient;
@@ -118,17 +119,13 @@ public class GenericRestClient {
         }
     }
 
+    @SneakyThrows
     public Response execute(Request request) {
-        try {
-            Response response = okClient.newCall(request).execute();
-            if (!response.isSuccessful()) {
-                logger.debug("{}, responseBody:{}", response, response.body().string());
-            }
-            return response;
-        } catch (IOException ex) {
-            logger.error("Exception,", ex);
+        Response response = okClient.newCall(request).execute();
+        if (!response.isSuccessful()) {
+            logger.debug("{}, responseBody:{}", response, response.body().string());
         }
-        return null;
+        return response;
     }
 
     public void close() {

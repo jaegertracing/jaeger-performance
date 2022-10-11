@@ -33,7 +33,11 @@ public class ReportEngineClient extends GenericRestClient {
     public ReportEngineClient(String hostUrl) {
         super(hostUrl);
         // update available
-        status();
+        try {
+            status();
+        } catch (Exception e) {
+            logger.warn("can't connect to report server", e);
+        }
     }
 
     public boolean isAvailable() {

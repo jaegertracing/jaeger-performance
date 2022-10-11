@@ -168,7 +168,7 @@
   <build>
     <plugins>
 
-      <!-- License header check -->
+      <!-- License header check
       <plugin>
         <groupId>com.mycila</groupId>
         <artifactId>license-maven-plugin</artifactId>
@@ -203,6 +203,7 @@
           </execution>
         </executions>
       </plugin>
+      -->
 
       <!-- Maven Assembly Plugin -->
       <plugin>
